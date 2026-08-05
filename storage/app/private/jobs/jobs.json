@@ -1,0 +1,87 @@
+[
+    {
+        "id": "b1a3c2d4-1111-4a2b-9c3d-000000000001",
+        "title": "Senior Product Manager",
+        "city": "Kota Malang",
+        "office_name": "Head Office",
+        "job_type": "Full Time",
+        "job_level": "Senior Level",
+        "salary_min": 2000000,
+        "salary_max": 6000000,
+        "description": "<h3>Tentang Pekerjaan</h3><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p><h3>Kewajiban Pekerjaan</h3><ul><li>Mengembangkan strategi produk yang komprehensif</li><li>Bekerja sama dengan tim engineering dan design</li><li>Menganalisis data pengguna untuk pengembangan produk</li><li>Mengelola roadmap produk dan prioritas fitur</li></ul><h3>Spesifikasi</h3><ul><li>Pengalaman minimal 5 tahun di bidang product management</li><li>Memahami prinsip UX/UI design</li><li>Kemampuan analisis data yang kuat</li><li>Kemampuan komunikasi yang baik</li></ul>",
+        "posted_at": "2026-07-25T22:00:00+07:00",
+        "closing_date": "2026-09-16",
+        "is_registered_question": true,
+        "questions": [
+            {
+                "id": "q1",
+                "question_text": "Berapa tahun pengalaman Anda di bidang product management?",
+                "type": "text"
+            },
+            {
+                "id": "q2",
+                "question_text": "Apakah Anda bersedia ditempatkan di Kota Malang?",
+                "type": "multiple_choice",
+                "options": [
+                    { "id": "o1", "label": "Ya" },
+                    { "id": "o2", "label": "Tidak" }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "b1a3c2d4-1111-4a2b-9c3d-000000000002",
+        "title": "Frontend Developer",
+        "city": "Kota Malang",
+        "office_name": "Head Office",
+        "job_type": "Full Time",
+        "job_level": "Staff",
+        "salary_min": 3000000,
+        "salary_max": 8000000,
+        "description": "<h3>Tentang Pekerjaan</h3><p>Kami mencari Frontend Developer yang berpengalaman untuk bergabung dengan tim engineering kami.</p><h3>Kewajiban Pekerjaan</h3><ul><li>Membangun antarmuka pengguna yang responsif</li><li>Berkolaborasi dengan tim design dan backend</li><li>Menulis kode yang bersih dan teruji</li></ul><h3>Spesifikasi</h3><ul><li>Pengalaman minimal 2 tahun dengan React/Vue</li><li>Memahami HTML, CSS, dan JavaScript modern</li><li>Familiar dengan REST API</li></ul>",
+        "posted_at": "2026-07-23T09:00:00+07:00",
+        "closing_date": "2026-09-10",
+        "is_registered_question": false,
+        "questions": []
+    },
+    {
+        "id": "b1a3c2d4-1111-4a2b-9c3d-000000000003",
+        "title": "Staff Finance",
+        "city": "Kota Malang",
+        "office_name": "Head Office",
+        "job_type": "Contract",
+        "job_level": "Staff",
+        "salary_min": 4000000,
+        "salary_max": 6000000,
+        "description": "<h3>Tentang Pekerjaan</h3><p>Bertanggung jawab atas pencatatan dan pelaporan keuangan perusahaan.</p><h3>Kewajiban Pekerjaan</h3><ul><li>Menyusun laporan keuangan bulanan</li><li>Melakukan rekonsiliasi bank</li><li>Mengelola pembayaran dan penagihan</li></ul><h3>Spesifikasi</h3><ul><li>Lulusan Akuntansi/Keuangan</li><li>Teliti dan disiplin</li><li>Menguasai Ms. Excel</li></ul>",
+        "posted_at": "2026-07-20T13:30:00+07:00",
+        "closing_date": "2026-08-31",
+        "is_registered_question": true,
+        "questions": [
+            {
+                "id": "q1",
+                "question_text": "Apakah Anda memiliki sertifikasi Brevet Pajak?",
+                "type": "multiple_choice",
+                "options": [
+                    { "id": "o1", "label": "Ya" },
+                    { "id": "o2", "label": "Tidak" }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "b1a3c2d4-1111-4a2b-9c3d-000000000004",
+        "title": "Internship Marketing",
+        "city": "Kota Malang",
+        "office_name": "Head Office",
+        "job_type": "Internship",
+        "job_level": "Entry Level",
+        "salary_min": 500000,
+        "salary_max": 1500000,
+        "description": "<h3>Tentang Pekerjaan</h3><p>Kesempatan magang untuk mahasiswa/fresh graduate di bidang marketing.</p><h3>Kewajiban Pekerjaan</h3><ul><li>Membantu perencanaan kampanye marketing</li><li>Mengelola konten media sosial</li></ul><h3>Spesifikasi</h3><ul><li>Mahasiswa aktif atau fresh graduate</li><li>Kreatif dan komunikatif</li></ul>",
+        "posted_at": "2026-07-10T08:00:00+07:00",
+        "closing_date": "2026-08-15",
+        "is_registered_question": false,
+        "questions": []
+    }
+]

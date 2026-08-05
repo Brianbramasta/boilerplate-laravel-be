@@ -1,0 +1,53 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app
+    restart: unless-stopped
+    working_dir: /var/www
+    ports:
+      - "8001:8000"
+    volumes:
+      - .:/var/www
+    depends_on:
+      - db
+      - testing_db
+    networks:
+      - app_network
+
+  db:
+    image: mysql:8
+    container_name: db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: app_db
+      MYSQL_ROOT_PASSWORD: 123
+    ports:
+      - "3309:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - app_network
+
+  testing_db:
+    image: mysql:8
+    container_name: testing_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: app_testing_db
+      MYSQL_ROOT_PASSWORD: 123
+    ports:
+      - "3310:3306"
+    volumes:
+      - testing_db_data:/var/lib/mysql
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  db_data:
+  testing_db_data:

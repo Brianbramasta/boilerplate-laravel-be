@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 
 Route::prefix('master-account')->controller(MasterAccountController::class)->group(function () {
-    Route::get('/', 'index')->middleware(['jwt', 'role:it,superadmin']);
+    Route::get('/', 'index')->middleware(['jwt']);
     Route::post('/', 'store')->middleware(['jwt', 'role:it,superadmin']);
     Route::get('/roles-dropdown', 'rolesDropdown')->middleware(['jwt', 'role:it,superadmin']);
     Route::get('/{id}', 'show')->middleware(['jwt', 'role:it,superadmin']);

@@ -38,9 +38,32 @@ class AuthService
             }
 
             $user = JWTAuth::user();
+            $user->load('role.roleMenus.menu');
+
+            $role = null;
+            $access = [];
+
+            if ($user->role) {
+                $role = [
+                    'id' => $user->role->id,
+                    'name' => $user->role->name,
+                    'slug' => $user->role->slug,
+                ];
+
+                foreach ($user->role->roleMenus as $rm) {
+                    $access[$rm->menu->code] = [
+                        'view' => $rm->can_view,
+                        'create' => $rm->can_create,
+                        'update' => $rm->can_update,
+                        'delete' => $rm->can_delete,
+                    ];
+                }
+            }
 
             return [
                 'user' => $user,
+                'role' => $role,
+                'access' => $access,
                 'token' => $token,
                 'expires_in' => JWTAuth::factory()->getTTL() * 60,
             ];

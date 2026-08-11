@@ -60,6 +60,8 @@ class AuthController extends BaseController
             return $this->successResponse(
                 data: [
                     'user' => new UserResource($succes['user']),
+                    'role' => $succes['role'],
+                    'access' => $succes['access'],
                     'token' => $succes['token'],
                     'expires_in' => $succes['expires_in'],
                 ],

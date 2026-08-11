@@ -4,7 +4,9 @@ namespace App\Providers;
 
 use App\Exceptions\ApiExceptionHandler;
 use App\Interface\Auth\AuthInterface;
+use App\Interface\Master\Account\MasterAccountInterface;
 use App\Repositories\Auth\AuthRepository;
+use App\Repositories\Master\Account\MasterAccountRepository;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -20,7 +22,11 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind(
             AuthInterface::class,
-            AuthRepository::class
+            AuthRepository::class,
+        );
+        $this->app->bind(
+            MasterAccountInterface::class,
+            MasterAccountRepository::class,
         );
     }
 

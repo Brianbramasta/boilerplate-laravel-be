@@ -11,7 +11,15 @@ class RoleMiddleware
     {
         $user = JWTAuth::user();
 
-        if (!$user || !$user->role || !in_array($user->role->slug, $roles)) {
+        if (!$user) {
+            return response()->json([
+                'meta' => ['status' => 401, 'message' => 'Unauthorized'],
+                'data' => null,
+                'errors' => null,
+            ], 401);
+        }
+
+        if (!$user->role || !in_array($user->role->slug, $roles)) {
             return response()->json([
                 'meta' => ['status' => 403, 'message' => 'Forbidden'],
                 'data' => null,

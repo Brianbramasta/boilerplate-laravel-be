@@ -78,10 +78,14 @@ class AuthController extends BaseController
     public function me()
     {
         try {
-            $user = $this->authService->me();
+            $data = $this->authService->me();
 
             return $this->successResponse(
-                data: new UserResource($user),
+                data: [
+                    'user' => new UserResource($data['user']),
+                    'role' => $data['role'],
+                    'access' => $data['access'],
+                ],
                 message: 'Berhasil mengambil data user'
             );
         } catch (\Throwable $th) {

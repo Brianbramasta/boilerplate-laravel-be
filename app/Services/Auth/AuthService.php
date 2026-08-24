@@ -44,27 +44,7 @@ class AuthService
                 throw new HttpException(403, 'Akun tidak aktif, silakan hubungi admin');
             }
 
-            $user->load('role.roleMenus.menu');
-
-            $role = null;
-            $access = [];
-
-            if ($user->role) {
-                $role = [
-                    'id' => $user->role->id,
-                    'name' => $user->role->name,
-                    'slug' => $user->role->slug,
-                ];
-
-                foreach ($user->role->roleMenus as $rm) {
-                    $access[$rm->menu->code] = [
-                        'view' => $rm->can_view,
-                        'create' => $rm->can_create,
-                        'update' => $rm->can_update,
-                        'delete' => $rm->can_delete,
-                    ];
-                }
-            }
+            [$role, $access] = $this->resolveRoleAccess($user);
 
             return [
                 'user' => $user,
@@ -76,9 +56,48 @@ class AuthService
         });
     }
 
-    public function me()
+    public function me(): array
     {
-        return JWTAuth::user();
+        $user = JWTAuth::user();
+
+        if (!$user) {
+            throw new HttpException(404, 'User tidak ditemukan');
+        }
+
+        [$role, $access] = $this->resolveRoleAccess($user);
+
+        return [
+            'user' => $user,
+            'role' => $role,
+            'access' => $access,
+        ];
+    }
+
+    protected function resolveRoleAccess($user): array
+    {
+        $user->load('role.roleMenus.menu');
+
+        $role = null;
+        $access = [];
+
+        if ($user->role) {
+            $role = [
+                'id' => $user->role->id,
+                'name' => $user->role->name,
+                'slug' => $user->role->slug,
+            ];
+
+            foreach ($user->role->roleMenus as $rm) {
+                $access[$rm->menu->code] = [
+                    'view' => $rm->can_view,
+                    'create' => $rm->can_create,
+                    'update' => $rm->can_update,
+                    'delete' => $rm->can_delete,
+                ];
+            }
+        }
+
+        return [$role, $access];
     }
 
     public function refresh(): array

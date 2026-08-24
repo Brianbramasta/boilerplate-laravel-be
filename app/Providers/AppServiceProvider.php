@@ -4,9 +4,9 @@ namespace App\Providers;
 
 use App\Exceptions\ApiExceptionHandler;
 use App\Interface\Auth\AuthInterface;
-use App\Interface\RolePermission\Account\MasterAccountInterface;
+use App\Interface\Master\Account\MasterAccountInterface;
 use App\Repositories\Auth\AuthRepository;
-use App\Repositories\RolePermission\Account\MasterAccountRepository;
+use App\Repositories\Master\Account\MasterAccountRepository;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider

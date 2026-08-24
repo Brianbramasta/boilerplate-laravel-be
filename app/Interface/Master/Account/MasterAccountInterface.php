@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Interface\RolePermission\Account;
+namespace App\Interface\Master\Account;
 
 interface MasterAccountInterface
 {

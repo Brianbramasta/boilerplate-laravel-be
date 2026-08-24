@@ -1,6 +1,6 @@
 <?php
-namespace App\Services\RolePermission\Account;
-use App\Interface\RolePermission\Account\MasterAccountInterface;
+namespace App\Services\Master\Account;
+use App\Interface\Master\Account\MasterAccountInterface;
 
 class MasterAccountService
 {

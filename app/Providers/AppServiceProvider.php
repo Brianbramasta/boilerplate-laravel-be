@@ -5,9 +5,11 @@ namespace App\Providers;
 use App\Exceptions\ApiExceptionHandler;
 use App\Interface\Auth\AuthInterface;
 use App\Interface\Master\Account\MasterAccountInterface;
+use App\Interface\Master\PsbAssessment\PsbAssessmentInterface;
 use App\Interface\Master\PsbVariable\PsbWoStepInterface;
 use App\Repositories\Auth\AuthRepository;
 use App\Repositories\Master\Account\MasterAccountRepository;
+use App\Repositories\Master\PsbAssessment\PsbAssessmentRepository;
 use App\Repositories\Master\PsbVariable\PsbIntegratedRepository;
 use App\Repositories\Master\PsbVariable\PsbJsonRepository;
 use Illuminate\Support\ServiceProvider;
@@ -38,6 +40,10 @@ class AppServiceProvider extends ServiceProvider
                 default => $app->make(PsbJsonRepository::class),
             };
         });
+        $this->app->bind(
+            PsbAssessmentInterface::class,
+            PsbAssessmentRepository::class,
+        );
     }
 
     /**

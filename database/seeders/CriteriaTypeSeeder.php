@@ -10,7 +10,7 @@ class CriteriaTypeSeeder extends Seeder
     public function run(): void
     {
         $types = [
-            ['code' => 'SINGLE', 'name' => 'Single'],
+            ['code' => 'SINGLE', 'name' => 'Single Source'],
             ['code' => 'CALCULATE', 'name' => 'Kalkulasi'],
         ];
 

@@ -115,6 +115,125 @@ class PsbAssessmentDocs
         }
         JSON;
 
+    public const SHOW_SUCCESS = <<<'JSON'
+        {
+            "meta": {
+                "status": 200,
+                "message": "Berhasil mengambil detail item penilaian"
+            },
+            "data": {
+                "id": "3b5e7a9c-1f2d-4e6b-8a0c-1122334455ff",
+                "code": "PN-0001",
+                "name": "Redaman OPM di ODP",
+                "assessment": {
+                    "id": "9f1b3e2a-4c3d-4a1a-9b2e-1234567890ab",
+                    "name": "Instalasi ODP"
+                },
+                "category": {
+                    "id": "6a2c4f1b-7d8e-4b3a-9c1d-0987654321cd",
+                    "name": "Kualitas"
+                },
+                "criteria_type": {
+                    "id": "4c6f8b0d-2e3f-4c1a-9b2d-2233445566aa",
+                    "code": "SINGLE",
+                    "name": "Single Source"
+                },
+                "operation": null,
+                "score": 50,
+                "status": "Aktif",
+                "mapping": [
+                    {
+                        "sequence": 1,
+                        "step_id": "3",
+                        "step_code": "TEK-03",
+                        "step_name": "Redaman ODP pada OPM",
+                        "variable_key": "redaman_odp",
+                        "type_data": "number"
+                    }
+                ],
+                "rules": [
+                    {
+                        "id": "2233445566bb-ccdd-eeff-0011-223344556677",
+                        "rule_code": "PN-0001-R1",
+                        "rule": "Redaman di luar batas wajar",
+                        "is_active": true
+                    },
+                    {
+                        "id": "3344556677cc-ddee-ff00-1122-334455667788",
+                        "rule_code": "PN-0001-R2",
+                        "rule": "Foto OPM tidak jelas/blur",
+                        "is_active": true
+                    }
+                ]
+            }
+        }
+        JSON;
+
+    public const NOT_FOUND = <<<'JSON'
+        {
+            "meta": {
+                "status": 404,
+                "message": "Item penilaian tidak ditemukan"
+            },
+            "data": null,
+            "errors": null
+        }
+        JSON;
+
+    public const UPDATE_SUCCESS = <<<'JSON'
+        {
+            "meta": {
+                "status": 200,
+                "message": "Item penilaian berhasil diupdate"
+            },
+            "data": {
+                "id": "3b5e7a9c-1f2d-4e6b-8a0c-1122334455ff",
+                "code": "PN-0001",
+                "name": "Redaman OPM di ODP",
+                "assessment": {
+                    "id": "9f1b3e2a-4c3d-4a1a-9b2e-1234567890ab",
+                    "name": "Instalasi ODP"
+                },
+                "category": {
+                    "id": "6a2c4f1b-7d8e-4b3a-9c1d-0987654321cd",
+                    "name": "Kualitas"
+                },
+                "criteria_type": {
+                    "id": "4c6f8b0d-2e3f-4c1a-9b2d-2233445566aa",
+                    "code": "SINGLE",
+                    "name": "Single Source"
+                },
+                "operation": null,
+                "score": 50,
+                "status": "Non Aktif",
+                "mapping": [
+                    {
+                        "sequence": 1,
+                        "step_id": "3",
+                        "step_code": "TEK-03",
+                        "step_name": "Redaman ODP pada OPM",
+                        "variable_key": "redaman_odp",
+                        "type_data": "number"
+                    }
+                ],
+                "rules": [
+                    {
+                        "id": "2233445566bb-ccdd-eeff-0011-223344556677",
+                        "rule_code": "PN-0001-R1",
+                        "rule": "Redaman di luar batas wajar (revisi)",
+                        "is_active": true
+                    },
+                    {
+                        "id": "4455667788dd-eeff-0011-2233-445566778899",
+                        "rule_code": "PN-0001-R3",
+                        "rule": "Standar baru ditambahkan saat edit",
+                        "is_active": true
+                    }
+                ]
+            }
+        }
+        JSON;
+
     public const STORE_VALIDATION_ERROR = <<<'JSON'
         {
             "meta": {

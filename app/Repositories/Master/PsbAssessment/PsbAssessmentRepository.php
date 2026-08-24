@@ -16,6 +16,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class PsbAssessmentRepository implements PsbAssessmentInterface
 {
+    protected const DETAIL_RELATIONS = ['assessment', 'category', 'criteriaType', 'operation', 'steps.stepValues', 'rules'];
+
     public function __construct(private PsbWoStepService $psbWoStepService)
     {
     }
@@ -65,6 +67,11 @@ class PsbAssessmentRepository implements PsbAssessmentInterface
             });
     }
 
+    public function show(string $id)
+    {
+        return $this->findOrFail($id);
+    }
+
     public function store(array $data)
     {
         return DB::transaction(function () use ($data) {
@@ -84,36 +91,125 @@ class PsbAssessmentRepository implements PsbAssessmentInterface
                 'is_active' => true,
             ]);
 
-            foreach ($mappingComponents as $sequence => $component) {
-                $step = AssessmentCriteriaStep::create([
-                    'assessment_criteria_id' => $criteria->id,
-                    'sequence' => $sequence + 1,
-                    'step_id' => (string) $component['step']->id,
-                    'step_code' => $component['step']->code,
-                    'step_name' => $component['step']->name,
-                ]);
+            $this->replaceMapping($criteria, $mappingComponents);
+            $this->syncRules($criteria, $data['rules'] ?? []);
 
-                AssessmentCriteriaStepValue::create([
-                    'criteria_step_id' => $step->id,
-                    'variable_name' => $component['variable']['key'],
-                    'variable_code' => $component['variable']['key'],
-                    'order' => 1,
-                    'type_data' => $component['variable']['type_data'] ?? 'text',
-                    'is_active' => true,
-                ]);
-            }
-
-            foreach ($data['rules'] ?? [] as $index => $rule) {
-                AssessmentCriteriaRule::create([
-                    'assessment_criteria_id' => $criteria->id,
-                    'rule_code' => $criteria->criteria_code . '-R' . ($index + 1),
-                    'rule' => $rule['rule'],
-                    'is_active' => $rule['is_active'] ?? true,
-                ]);
-            }
-
-            return $criteria->load(['assessment', 'category', 'criteriaType', 'operation', 'steps.stepValues', 'rules']);
+            return $criteria->load(self::DETAIL_RELATIONS);
         });
+    }
+
+    public function update(string $id, array $data)
+    {
+        return DB::transaction(function () use ($id, $data) {
+            $criteria = $this->findOrFail($id);
+
+            $criteriaType = CriteriaType::findOrFail($data['criteria_type_id']);
+            $isCalculate = $criteriaType->code === 'CALCULATE';
+
+            $mappingComponents = $this->resolveMappingComponents($data['mapping'], $isCalculate);
+
+            $criteria->update([
+                'assessment_id' => $data['assessment_id'],
+                'assessment_category_id' => $data['assessment_category_id'],
+                'name' => $data['name'],
+                'criteria_type_id' => $criteriaType->id,
+                'operation_id' => $isCalculate ? $data['operation_id'] : null,
+                'is_active' => $data['is_active'],
+            ]);
+
+            $this->replaceMapping($criteria, $mappingComponents);
+            $this->syncRules($criteria, $data['rules'] ?? []);
+
+            return $criteria->fresh(self::DETAIL_RELATIONS);
+        });
+    }
+
+    protected function findOrFail(string $id): AssessmentCriteria
+    {
+        $criteria = AssessmentCriteria::with(self::DETAIL_RELATIONS)->find($id);
+
+        if (!$criteria) {
+            throw new HttpException(404, 'Item penilaian tidak ditemukan');
+        }
+
+        return $criteria;
+    }
+
+    /**
+     * Mapping selalu diganti total (bukan di-diff per slot): step lama
+     * di-soft-delete beserta step value-nya, lalu dibuat baru dari payload.
+     * Ini yang paling sederhana mengingat jumlah slot bisa berubah antara
+     * Single (1) dan Kalkulasi (2), dan riwayat lama tetap tersimpan lewat
+     * soft delete (bukan hard delete).
+     */
+    protected function replaceMapping(AssessmentCriteria $criteria, array $mappingComponents): void
+    {
+        foreach ($criteria->steps as $oldStep) {
+            $oldStep->stepValues()->delete();
+            $oldStep->delete();
+        }
+
+        foreach ($mappingComponents as $sequence => $component) {
+            $step = AssessmentCriteriaStep::create([
+                'assessment_criteria_id' => $criteria->id,
+                'sequence' => $sequence + 1,
+                'step_id' => (string) $component['step']->id,
+                'step_code' => $component['step']->code,
+                'step_name' => $component['step']->name,
+            ]);
+
+            AssessmentCriteriaStepValue::create([
+                'criteria_step_id' => $step->id,
+                'variable_name' => $component['variable']['key'],
+                'variable_code' => $component['variable']['key'],
+                'order' => 1,
+                'type_data' => $component['variable']['type_data'] ?? 'text',
+                'is_active' => true,
+            ]);
+        }
+    }
+
+    /**
+     * rules: diff-based lewat `id`. Item dengan `id` yang cocok diupdate;
+     * tanpa `id` dibuat baru; item lama yang tidak disebut lagi di payload
+     * di-soft-delete (bukan dihapus permanen) — sama seperti pola
+     * extend_component di psb-variable.
+     */
+    protected function syncRules(AssessmentCriteria $criteria, array $rules): void
+    {
+        $existingIds = $criteria->rules()->pluck('id');
+        $incomingIds = collect($rules)->pluck('id')->filter()->values();
+
+        AssessmentCriteriaRule::whereIn('id', $existingIds->diff($incomingIds))->delete();
+
+        foreach ($rules as $rule) {
+            if (!empty($rule['id'])) {
+                AssessmentCriteriaRule::where('id', $rule['id'])
+                    ->where('assessment_criteria_id', $criteria->id)
+                    ->update([
+                        'rule' => $rule['rule'],
+                        'is_active' => $rule['is_active'] ?? true,
+                    ]);
+
+                continue;
+            }
+
+            AssessmentCriteriaRule::create([
+                'assessment_criteria_id' => $criteria->id,
+                'rule_code' => $this->nextRuleCode($criteria),
+                'rule' => $rule['rule'],
+                'is_active' => $rule['is_active'] ?? true,
+            ]);
+        }
+    }
+
+    protected function nextRuleCode(AssessmentCriteria $criteria): string
+    {
+        $count = AssessmentCriteriaRule::withTrashed()
+            ->where('assessment_criteria_id', $criteria->id)
+            ->count();
+
+        return $criteria->criteria_code . '-R' . ($count + 1);
     }
 
     /**

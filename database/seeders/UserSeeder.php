@@ -20,16 +20,37 @@ class UserSeeder extends Seeder
                 'email' => 'it@example.com',
                 'name' => 'IT User',
                 'role_id' => $it->id,
+                'is_active' => true,
             ],
             [
                 'email' => 'superadmin@example.com',
                 'name' => 'Superadmin User',
                 'role_id' => $superadmin->id,
+                'is_active' => true,
             ],
             [
                 'email' => 'admin.cuni@example.com',
                 'name' => 'Admin CUNI User',
                 'role_id' => $adminCuni->id,
+                'is_active' => true,
+            ],
+            [
+                'email' => 'vel@dasaria.co.id',
+                'name' => 'iveeel baik',
+                'role_id' => $superadmin->id,
+                'is_active' => true,
+            ],
+            [
+                'email' => 'mima@dasaria.co.id',
+                'name' => 'mimu imut',
+                'role_id' => $adminCuni->id,
+                'is_active' => true,
+            ],
+            [
+                'email' => 'rupi@dasaria.co.id',
+                'name' => 'rupi puppy',
+                'role_id' => $adminCuni->id,
+                'is_active' => false,
             ],
         ];
 
@@ -39,7 +60,8 @@ class UserSeeder extends Seeder
                 [
                     'name' => $user['name'],
                     'role_id' => $user['role_id'],
-                    'password' => Hash::make('password123'),
+                    'is_active' => $user['is_active'],
+                    'password' => Hash::make('password'),
                 ],
             );
         }

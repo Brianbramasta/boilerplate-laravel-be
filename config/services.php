@@ -35,4 +35,17 @@ return [
         ],
     ],
 
+    // Kredensial bersama untuk sistem ERP (BE lain) — dipakai lintas integrasi
+    // (PSB WO Step dan integrasi lain menyusul), bukan per-fitur.
+    'erp' => [
+        'url' => env('ERP_API_URL'),
+        'key' => env('ERP_API_KEY'),
+    ],
+
+    'psb_wo_step' => [
+        // 'json' = data lokal di storage/app/private/psb-wo-steps.json (aktif saat ini).
+        // 'api'  = terhubung ke sistem ERP lewat PsbIntegratedRepository.
+        'driver' => env('PSB_WO_STEP_DRIVER', 'json'),
+    ],
+
 ];

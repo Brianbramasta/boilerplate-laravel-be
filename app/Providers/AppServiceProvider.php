@@ -5,8 +5,11 @@ namespace App\Providers;
 use App\Exceptions\ApiExceptionHandler;
 use App\Interface\Auth\AuthInterface;
 use App\Interface\Master\Account\MasterAccountInterface;
+use App\Interface\Master\PsbVariable\PsbWoStepInterface;
 use App\Repositories\Auth\AuthRepository;
 use App\Repositories\Master\Account\MasterAccountRepository;
+use App\Repositories\Master\PsbVariable\PsbIntegratedRepository;
+use App\Repositories\Master\PsbVariable\PsbJsonRepository;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -28,6 +31,13 @@ class AppServiceProvider extends ServiceProvider
             MasterAccountInterface::class,
             MasterAccountRepository::class,
         );
+        // Switch: 'json' (default, lokal) atau 'api' (sistem BE lain, lihat PsbIntegratedRepository).
+        $this->app->bind(PsbWoStepInterface::class, function ($app) {
+            return match (config('services.psb_wo_step.driver', 'json')) {
+                'api' => $app->make(PsbIntegratedRepository::class),
+                default => $app->make(PsbJsonRepository::class),
+            };
+        });
     }
 
     /**

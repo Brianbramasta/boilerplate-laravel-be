@@ -4,9 +4,9 @@ namespace App\Providers;
 
 use App\Exceptions\ApiExceptionHandler;
 use App\Interface\Auth\AuthInterface;
-use App\Interface\Master\Account\MasterAccountInterface;
+use App\Interface\RolePermission\Account\MasterAccountInterface;
 use App\Repositories\Auth\AuthRepository;
-use App\Repositories\Master\Account\MasterAccountRepository;
+use App\Repositories\RolePermission\Account\MasterAccountRepository;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -35,6 +35,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        $this->loadMigrationsFrom([
+            database_path('migrations/audit'),
+            database_path('migrations/role_permission'),
+            database_path('migrations/master'),
+            database_path('migrations/ref'),
+            database_path('migrations/assessment_psb'),
+        ]);
     }
 }

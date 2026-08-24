@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Master\Account\MasterAccountController;
+use App\Http\Controllers\RolePermission\Account\MasterAccountController;
 use Illuminate\Support\Facades\Route;
 
 

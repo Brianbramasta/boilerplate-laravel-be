@@ -1,0 +1,31 @@
+<?php
+
+namespace App\Models\AssessmentPSB;
+
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+
+class AssessmentTransactionStepValue extends Model
+{
+    use HasUuids;
+
+    protected $table = 'tr_assessment_step_values';
+
+    protected $fillable = [
+        'criteria_transaction_id',
+        'order',
+        'step_code',
+        'variable_code',
+        'variable_name',
+    ];
+
+    public function detailCriteria()
+    {
+        return $this->belongsTo(AssessmentTransactionDetailCriteria::class, 'criteria_transaction_id');
+    }
+
+    public function inputValues()
+    {
+        return $this->hasMany(StepInputValue::class, 'assessment_step_values_id');
+    }
+}

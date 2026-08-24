@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\Menu;
-use App\Models\Role;
-use App\Models\RoleMenu;
+use App\Models\RolePermission\Menu;
+use App\Models\RolePermission\Role;
+use App\Models\RolePermission\RoleMenu;
 use Illuminate\Database\Seeder;
 
 class RoleMenuSeeder extends Seeder

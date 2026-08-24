@@ -16,6 +16,14 @@ class DatabaseSeeder extends Seeder
             MenuSeeder::class,
             RoleMenuSeeder::class,
             UserSeeder::class,
+            AssessmentCodeSeeder::class,
+            AssessmentResultSeeder::class,
+            AssessmentStatusSeeder::class,
+            CriteriaTypeSeeder::class,
+            CalculationOperationSeeder::class,
+            ScoreTypeSeeder::class,
+            AssessmentCategorySeeder::class,
+            AssessmentSeeder::class,
         ]);
     }
 }

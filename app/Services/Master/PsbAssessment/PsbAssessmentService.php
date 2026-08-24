@@ -29,4 +29,9 @@ class PsbAssessmentService
     {
         return $this->psbAssessmentInterface->update($id, $data);
     }
+
+    public function updateWeights(array $data)
+    {
+        return $this->psbAssessmentInterface->updateWeights($data);
+    }
 }

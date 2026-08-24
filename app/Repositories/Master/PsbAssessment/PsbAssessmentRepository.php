@@ -5,6 +5,7 @@ namespace App\Repositories\Master\PsbAssessment;
 use App\Interface\Master\PsbAssessment\PsbAssessmentInterface;
 use App\Models\AssessmentPSB\AssessmentCriteriaStepValue;
 use App\Models\Master\Assessment;
+use App\Models\Master\AssessmentCategory;
 use App\Models\Master\AssessmentCriteria;
 use App\Models\Master\AssessmentCriteriaRule;
 use App\Models\Master\AssessmentCriteriaStep;
@@ -121,6 +122,57 @@ class PsbAssessmentRepository implements PsbAssessmentInterface
             $this->syncRules($criteria, $data['rules'] ?? []);
 
             return $criteria->fresh(self::DETAIL_RELATIONS);
+        });
+    }
+
+    /**
+     * "Atur Bobot": update score sekaligus untuk seluruh item AKTIF dalam
+     * satu grup (assessment_id + assessment_category_id). Payload wajib
+     * berisi PERSIS set item aktif grup itu (tidak boleh kurang/lebih), dan
+     * total score-nya harus tepat 100 — kalau tidak, ditolak (422) dan tidak
+     * ada yang tersimpan.
+     */
+    public function updateWeights(array $data)
+    {
+        return DB::transaction(function () use ($data) {
+            $activeCriteria = AssessmentCriteria::where('assessment_id', $data['assessment_id'])
+                ->where('assessment_category_id', $data['assessment_category_id'])
+                ->where('is_active', true)
+                ->get();
+
+            if ($activeCriteria->isEmpty()) {
+                throw new HttpException(404, 'Tidak ada item aktif pada grup penilaian ini.');
+            }
+
+            $activeIds = $activeCriteria->pluck('id')->sort()->values();
+            $incomingIds = collect($data['weights'])->pluck('id')->sort()->values();
+
+            if ($activeIds->all() !== $incomingIds->all()) {
+                throw new HttpException(422, 'Daftar item tidak sesuai dengan item aktif pada grup penilaian ini — muat ulang data sebelum menyimpan.');
+            }
+
+            $total = collect($data['weights'])->sum('score');
+
+            if (abs($total - 100) > 0.01) {
+                $totalLabel = rtrim(rtrim(number_format($total, 2), '0'), '.');
+                throw new HttpException(422, "Total bobot harus tepat 100%. Saat ini: {$totalLabel}%.");
+            }
+
+            foreach ($data['weights'] as $weight) {
+                AssessmentCriteria::where('id', $weight['id'])->update(['score' => $weight['score']]);
+            }
+
+            $items = AssessmentCriteria::with('criteriaType')
+                ->whereIn('id', $activeIds)
+                ->orderBy('criteria_code')
+                ->get();
+
+            return [
+                'assessment' => Assessment::findOrFail($data['assessment_id']),
+                'category' => AssessmentCategory::findOrFail($data['assessment_category_id']),
+                'total_weight_active' => (float) $items->sum('score'),
+                'items' => $items,
+            ];
         });
     }
 

@@ -7,6 +7,7 @@ use App\Http\Docs\AuthDocs;
 use App\Http\Docs\PsbAssessmentDocs;
 use App\Http\Requests\Master\PsbAssessment\StorePsbAssessmentRequest;
 use App\Http\Requests\Master\PsbAssessment\UpdatePsbAssessmentRequest;
+use App\Http\Requests\Master\PsbAssessment\UpdatePsbAssessmentWeightsRequest;
 use App\Http\Resources\Master\PsbAssessment\PsbAssessmentDetailResource;
 use App\Http\Resources\Master\PsbAssessment\PsbAssessmentItemResource;
 use App\Services\Master\PsbAssessment\PsbAssessmentService;
@@ -115,6 +116,37 @@ class PsbAssessmentController extends BaseController
                 new PsbAssessmentDetailResource($data),
                 'Item penilaian berhasil diupdate'
             );
+        } catch (\Throwable $th) {
+            return api()->handle($th);
+        }
+    }
+
+    #[Response(PsbAssessmentDocs::WEIGHTS_SUCCESS, status: 200, description: 'Bobot berhasil disimpan')]
+    #[Response(PsbAssessmentDocs::WEIGHTS_VALIDATION_ERROR, status: 422, description: 'Validasi gagal — field wajib kosong')]
+    #[Response(PsbAssessmentDocs::WEIGHTS_TOTAL_INVALID, status: 422, description: 'Total bobot yang dikirim tidak tepat 100%')]
+    #[Response(PsbAssessmentDocs::WEIGHTS_SET_MISMATCH, status: 422, description: 'Daftar item yang dikirim tidak persis sama dengan item aktif pada grup ini')]
+    #[Response(PsbAssessmentDocs::WEIGHTS_NO_ACTIVE_ITEM, status: 404, description: 'Grup penilaian ini tidak punya item aktif')]
+    #[Response(AuthDocs::UNAUTHORIZED, status: 401, description: 'Token tidak dikirim, tidak valid, atau sudah expired')]
+    #[Response(PsbAssessmentDocs::FORBIDDEN, status: 403, description: 'Role user tidak memiliki akses (bukan it/superadmin)')]
+    public function updateWeights(UpdatePsbAssessmentWeightsRequest $request)
+    {
+        try {
+            $group = $this->psbAssessmentService->updateWeights($request->validated());
+
+            $data = [
+                'assessment' => [
+                    'id' => $group['assessment']->id,
+                    'name' => $group['assessment']->name,
+                ],
+                'category' => [
+                    'id' => $group['category']->id,
+                    'name' => $group['category']->name,
+                ],
+                'total_weight_active' => $group['total_weight_active'],
+                'items' => PsbAssessmentItemResource::collection($group['items']),
+            ];
+
+            return $this->successResponse($data, 'Bobot berhasil disimpan');
         } catch (\Throwable $th) {
             return api()->handle($th);
         }

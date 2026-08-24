@@ -296,4 +296,89 @@ class PsbAssessmentDocs
             "errors": null
         }
         JSON;
+
+    public const WEIGHTS_SUCCESS = <<<'JSON'
+        {
+            "meta": {
+                "status": 200,
+                "message": "Bobot berhasil disimpan"
+            },
+            "data": {
+                "assessment": {
+                    "id": "9f1b3e2a-4c3d-4a1a-9b2e-1234567890ab",
+                    "name": "Instalasi ODP"
+                },
+                "category": {
+                    "id": "6a2c4f1b-7d8e-4b3a-9c1d-0987654321cd",
+                    "name": "Kerapian"
+                },
+                "total_weight_active": 100,
+                "items": [
+                    {
+                        "id": "3b5e7a9c-1f2d-4e6b-8a0c-1122334455ff",
+                        "code": "PN-0003",
+                        "name": "Penataan Patchcord ODP",
+                        "criteria_type": "Single Source",
+                        "score": 50,
+                        "status": "Aktif"
+                    },
+                    {
+                        "id": "4c6f8b0d-2e3f-4c1a-9b2d-2233445566aa",
+                        "code": "PN-0004",
+                        "name": "Tutup ODP",
+                        "criteria_type": "Single Source",
+                        "score": 50,
+                        "status": "Aktif"
+                    }
+                ]
+            }
+        }
+        JSON;
+
+    public const WEIGHTS_VALIDATION_ERROR = <<<'JSON'
+        {
+            "meta": {
+                "status": 422,
+                "message": "Failed Validation"
+            },
+            "data": null,
+            "errors": {
+                "assessment_id": ["The assessment id field is required."],
+                "weights": ["The weights field is required."]
+            }
+        }
+        JSON;
+
+    public const WEIGHTS_TOTAL_INVALID = <<<'JSON'
+        {
+            "meta": {
+                "status": 422,
+                "message": "Total bobot harus tepat 100%. Saat ini: 90%."
+            },
+            "data": null,
+            "errors": null
+        }
+        JSON;
+
+    public const WEIGHTS_SET_MISMATCH = <<<'JSON'
+        {
+            "meta": {
+                "status": 422,
+                "message": "Daftar item tidak sesuai dengan item aktif pada grup penilaian ini — muat ulang data sebelum menyimpan."
+            },
+            "data": null,
+            "errors": null
+        }
+        JSON;
+
+    public const WEIGHTS_NO_ACTIVE_ITEM = <<<'JSON'
+        {
+            "meta": {
+                "status": 404,
+                "message": "Tidak ada item aktif pada grup penilaian ini."
+            },
+            "data": null,
+            "errors": null
+        }
+        JSON;
 }

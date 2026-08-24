@@ -49,6 +49,7 @@ class AuthController extends BaseController
     #[Response(AuthDocs::LOGIN_SUCCESS, status: 200, description: 'Login berhasil')]
     #[Response(AuthDocs::LOGIN_VALIDATION_ERROR, status: 422, description: 'Validasi gagal — field wajib kosong')]
     #[Response(AuthDocs::LOGIN_INVALID_CREDENTIALS, status: 401, description: 'Email atau password salah')]
+    #[Response(AuthDocs::LOGIN_ACCOUNT_INACTIVE, status: 403, description: 'Akun ditemukan tapi berstatus tidak aktif')]
     #[Response(AuthDocs::LOGIN_SERVER_ERROR, status: 500, description: 'Kesalahan tak terduga di server')]
     public function login(LoginRequest $request)
     {

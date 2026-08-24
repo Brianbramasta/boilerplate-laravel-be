@@ -113,6 +113,17 @@ class AuthDocs
         }
         JSON;
 
+    public const LOGIN_ACCOUNT_INACTIVE = <<<'JSON'
+        {
+            "meta": {
+                "status": 403,
+                "message": "Akun tidak aktif, silakan hubungi admin"
+            },
+            "data": null,
+            "errors": null
+        }
+        JSON;
+
     public const LOGIN_SERVER_ERROR = <<<'JSON'
         {
             "meta": {

@@ -38,6 +38,12 @@ class AuthService
             }
 
             $user = JWTAuth::user();
+
+            if (!$user->is_active) {
+                JWTAuth::setToken($token)->invalidate();
+                throw new HttpException(403, 'Akun tidak aktif, silakan hubungi admin');
+            }
+
             $user->load('role.roleMenus.menu');
 
             $role = null;

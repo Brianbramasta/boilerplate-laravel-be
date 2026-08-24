@@ -4,6 +4,7 @@ namespace App\Repositories\Master\PsbAssessment;
 
 use App\Interface\Master\PsbAssessment\PsbAssessmentInterface;
 use App\Models\AssessmentPSB\AssessmentCriteriaStepValue;
+use App\Models\Master\Assessment;
 use App\Models\Master\AssessmentCriteria;
 use App\Models\Master\AssessmentCriteriaRule;
 use App\Models\Master\AssessmentCriteriaStep;
@@ -21,7 +22,10 @@ class PsbAssessmentRepository implements PsbAssessmentInterface
 
     public function index($params = [])
     {
-        $criteria = AssessmentCriteria::with(['assessment', 'category', 'criteriaType'])
+        // Dikelompokkan per assessment_id dulu, supaya proses (mt_assessments)
+        // yang belum punya item sama sekali tetap bisa "diisi" jadi grup kosong
+        // di bawah, bukan hilang dari response.
+        $criteriaByAssessment = AssessmentCriteria::with(['category', 'criteriaType'])
             ->when(!empty($params['search']), function ($q) use ($params) {
                 $q->where('name', 'like', '%' . $params['search'] . '%');
             })
@@ -32,12 +36,14 @@ class PsbAssessmentRepository implements PsbAssessmentInterface
                 $q->where('is_active', filter_var($params['is_active'], FILTER_VALIDATE_BOOLEAN));
             })
             ->orderBy('criteria_code')
-            ->get();
+            ->get()
+            ->groupBy('assessment_id');
 
-        return $criteria
-            ->groupBy('assessment_id')
-            ->map(function ($assessmentItems) {
-                $assessment = $assessmentItems->first()->assessment;
+        return Assessment::where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->map(function ($assessment) use ($criteriaByAssessment) {
+                $assessmentItems = $criteriaByAssessment->get($assessment->id, collect());
 
                 $categories = $assessmentItems
                     ->groupBy('assessment_category_id')
@@ -56,8 +62,7 @@ class PsbAssessmentRepository implements PsbAssessmentInterface
                     'assessment' => $assessment,
                     'categories' => $categories,
                 ];
-            })
-            ->values();
+            });
     }
 
     public function store(array $data)

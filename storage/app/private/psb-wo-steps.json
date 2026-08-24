@@ -1,0 +1,200 @@
+[
+    {
+        "id": 1,
+        "code": "TEK-01",
+        "name": "Mulai Penarikan",
+        "description": "Memulai proses penarikan kabel dari ODP ke lokasi pelanggan.",
+        "order": 1,
+        "is_last": false,
+        "is_picture": false,
+        "is_data": true,
+        "is_active": true,
+        "default_component": [
+            {
+                "key": "waktu_mulai",
+                "value": null,
+                "is_active": true,
+                "type_data": "timestamp"
+            }
+        ],
+        "extend_component": [],
+        "created_at": "2026-08-03T11:10:40.000000Z",
+        "updated_at": "2026-08-03T11:10:40.000000Z"
+    },
+    {
+        "id": 2,
+        "code": "TEK-02",
+        "name": "Pilih Kabel",
+        "description": "Memilih jenis dan panjang kabel drop core yang digunakan.",
+        "order": 2,
+        "is_last": false,
+        "is_picture": false,
+        "is_data": true,
+        "is_active": true,
+        "default_component": [
+            {
+                "key": "jenis_kabel",
+                "value": null,
+                "is_active": true,
+                "type_data": "text"
+            },
+            {
+                "key": "panjang_kabel",
+                "value": null,
+                "is_active": true,
+                "type_data": "number"
+            }
+        ],
+        "extend_component": [],
+        "created_at": "2026-08-03T11:10:40.000000Z",
+        "updated_at": "2026-08-03T11:10:40.000000Z"
+    },
+    {
+        "id": 3,
+        "code": "TEK-03",
+        "name": "Redaman ODP pada OPM",
+        "description": "Mengukur redaman pada ODP menggunakan OPM.",
+        "order": 3,
+        "is_last": false,
+        "is_picture": true,
+        "is_data": false,
+        "is_active": true,
+        "default_component": [
+            {
+                "key": "redaman_odp",
+                "value": null,
+                "is_active": true,
+                "type_data": "number"
+            }
+        ],
+        "extend_component": [],
+        "created_at": "2026-08-03T11:10:40.000000Z",
+        "updated_at": "2026-08-03T11:10:40.000000Z"
+    },
+    {
+        "id": 4,
+        "code": "TEK-04",
+        "name": "Nilai Sambungan Patchcord ke Drop Core",
+        "description": "Menilai kualitas sambungan patchcord ke drop core.",
+        "order": 4,
+        "is_last": false,
+        "is_picture": true,
+        "is_data": false,
+        "is_active": true,
+        "default_component": [],
+        "extend_component": [],
+        "created_at": "2026-08-03T11:10:40.000000Z",
+        "updated_at": "2026-08-03T11:10:40.000000Z"
+    },
+    {
+        "id": 5,
+        "code": "TEK-05",
+        "name": "Instalasi Patchcord ODP Sebelum Ditutup",
+        "description": "Dokumentasi instalasi patchcord pada ODP sebelum ditutup.",
+        "order": 5,
+        "is_last": false,
+        "is_picture": true,
+        "is_data": false,
+        "is_active": true,
+        "default_component": [],
+        "extend_component": [],
+        "created_at": "2026-08-03T11:10:40.000000Z",
+        "updated_at": "2026-08-03T11:10:40.000000Z"
+    },
+    {
+        "id": 6,
+        "code": "TEK-06",
+        "name": "Tutup ODP",
+        "description": "Dokumentasi kondisi ODP setelah ditutup kembali.",
+        "order": 6,
+        "is_last": false,
+        "is_picture": true,
+        "is_data": false,
+        "is_active": true,
+        "default_component": [],
+        "extend_component": [],
+        "created_at": "2026-08-03T11:10:40.000000Z",
+        "updated_at": "2026-08-03T11:10:40.000000Z"
+    },
+    {
+        "id": 7,
+        "code": "TEK-07",
+        "name": "Nilai Sambungan Drop Core ke Patchcord Modem",
+        "description": "Menilai kualitas sambungan drop core ke patchcord modem.",
+        "order": 7,
+        "is_last": false,
+        "is_picture": true,
+        "is_data": false,
+        "is_active": true,
+        "default_component": [],
+        "extend_component": [],
+        "created_at": "2026-08-03T11:10:40.000000Z",
+        "updated_at": "2026-08-03T11:10:40.000000Z"
+    },
+    {
+        "id": 8,
+        "code": "TEK-08",
+        "name": "Redaman Pelanggan pada OPM",
+        "description": "Mengukur redaman pada sisi pelanggan menggunakan OPM.",
+        "order": 8,
+        "is_last": false,
+        "is_picture": true,
+        "is_data": false,
+        "is_active": true,
+        "default_component": [
+            {
+                "key": "redaman_pelanggan",
+                "value": null,
+                "is_active": true,
+                "type_data": "number"
+            }
+        ],
+        "extend_component": [
+            {
+                "key": "test",
+                "value": "Test",
+                "is_active": true,
+                "deleted_at": null
+            }
+        ],
+        "created_at": "2026-08-03T11:10:40.000000Z",
+        "updated_at": "2026-08-24T13:53:05.004249Z"
+    },
+    {
+        "id": 9,
+        "code": "TEK-09",
+        "name": "Ajukan Registrasi, Input End Kabel",
+        "description": "Mengajukan registrasi perangkat dan menginput data end kabel.",
+        "order": 9,
+        "is_last": false,
+        "is_picture": false,
+        "is_data": true,
+        "is_active": true,
+        "default_component": [
+            {
+                "key": "end_kabel",
+                "value": null,
+                "is_active": true,
+                "type_data": "text"
+            }
+        ],
+        "extend_component": [],
+        "created_at": "2026-08-03T11:10:40.000000Z",
+        "updated_at": "2026-08-03T11:10:40.000000Z"
+    },
+    {
+        "id": 10,
+        "code": "TEK-10",
+        "name": "Upload Foto Instalasi Modem",
+        "description": "Dokumentasi hasil instalasi modem di lokasi pelanggan.",
+        "order": 10,
+        "is_last": true,
+        "is_picture": true,
+        "is_data": false,
+        "is_active": true,
+        "default_component": [],
+        "extend_component": [],
+        "created_at": "2026-08-03T11:10:40.000000Z",
+        "updated_at": "2026-08-03T11:10:40.000000Z"
+    }
+]

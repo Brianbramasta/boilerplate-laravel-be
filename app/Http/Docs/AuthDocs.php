@@ -82,6 +82,19 @@ class AuthDocs
                     "created_at": "2026-08-05T03:12:45.000000Z",
                     "updated_at": "2026-08-05T03:12:45.000000Z"
                 },
+                "role": {
+                    "id": "6a2c4f1b-7d8e-4b3a-9c1d-0987654321cd",
+                    "name": "Superadmin",
+                    "slug": "superadmin"
+                },
+                "access": {
+                    "master-account": {
+                        "view": true,
+                        "create": true,
+                        "update": true,
+                        "delete": true
+                    }
+                },
                 "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJhcGkiLCJzdWIiOiI5ZjFiM2UyYSJ9.abc123signature",
                 "expires_in": 3600
             }
@@ -113,6 +126,17 @@ class AuthDocs
         }
         JSON;
 
+    public const LOGIN_ACCOUNT_INACTIVE = <<<'JSON'
+        {
+            "meta": {
+                "status": 403,
+                "message": "Akun tidak aktif, silakan hubungi admin"
+            },
+            "data": null,
+            "errors": null
+        }
+        JSON;
+
     public const LOGIN_SERVER_ERROR = <<<'JSON'
         {
             "meta": {
@@ -131,11 +155,26 @@ class AuthDocs
                 "message": "Berhasil mengambil data user"
             },
             "data": {
-                "id": "9f1b3e2a-4c3d-4a1a-9b2e-1234567890ab",
-                "name": "Budi Santoso",
-                "email": "budi@example.com",
-                "created_at": "2026-08-05T03:12:45.000000Z",
-                "updated_at": "2026-08-05T03:12:45.000000Z"
+                "user": {
+                    "id": "9f1b3e2a-4c3d-4a1a-9b2e-1234567890ab",
+                    "name": "Budi Santoso",
+                    "email": "budi@example.com",
+                    "created_at": "2026-08-05T03:12:45.000000Z",
+                    "updated_at": "2026-08-05T03:12:45.000000Z"
+                },
+                "role": {
+                    "id": "6a2c4f1b-7d8e-4b3a-9c1d-0987654321cd",
+                    "name": "Superadmin",
+                    "slug": "superadmin"
+                },
+                "access": {
+                    "master-account": {
+                        "view": true,
+                        "create": true,
+                        "update": true,
+                        "delete": true
+                    }
+                }
             }
         }
         JSON;

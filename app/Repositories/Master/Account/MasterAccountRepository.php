@@ -1,7 +1,7 @@
 <?php
 namespace App\Repositories\Master\Account;
 use App\Interface\Master\Account\MasterAccountInterface;
-use App\Models\Role;
+use App\Models\RolePermission\Role;
 use App\Models\User;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 

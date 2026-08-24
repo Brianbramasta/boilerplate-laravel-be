@@ -15,7 +15,7 @@ class DetailMasterAccountResource extends JsonResource
             'email' => $this->email,
             'role_id' => $this->role_id,
             'role' => $this->role?->name,
-            'is_active' => $this->is_active ? 'Aktif' : 'Non Aktif', 
+            'is_active' => $this->is_active ? 'Aktif' : 'Non Aktif',
         ];
     }
 }

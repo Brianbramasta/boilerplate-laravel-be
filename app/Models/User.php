@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\RolePermission\Role;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

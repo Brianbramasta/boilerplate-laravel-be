@@ -4,6 +4,7 @@ namespace App\Repositories\Master\PsbVariable;
 
 use App\Interface\Master\PsbVariable\PsbWoStepInterface;
 use App\Models\Audit\MasterDataLog;
+use App\Repositories\Master\PsbVariable\Concerns\MergesPsbStepComponents;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
@@ -23,12 +24,17 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  *   (hanya ada di detail) — index() di bawah mengambil detail per-item untuk
  *   melengkapinya, cukup wajar untuk katalog kecil (±15 step).
  * - Kontrak saat ini hanya punya field `variables` (belum ada `default_variables`,
- *   masih didiskusikan). Karena itu, update() di bawah memetakan payload
- *   `default_component` kita ke field `variables` sebagai jembatan sementara —
- *   perlu direvisi begitu tim BE lain memastikan field `default_variables`.
+ *   masih didiskusikan) — dipetakan ke extend_component kita (lihat show()).
+ *   update() di bawah mengirim extend_component (setelah di-merge, termasuk
+ *   soft delete) sebagai `variables` ke PATCH. Perubahan is_active pada
+ *   default_component TIDAK terkirim ke sistem BE lain — belum ada field yang
+ *   sepadan di kontrak untuk itu; perlu direvisi begitu tim BE lain
+ *   memastikan field `default_variables` beserta cara update-nya.
  */
 class PsbIntegratedRepository implements PsbWoStepInterface
 {
+    use MergesPsbStepComponents;
+
     public function index($params = [], $perPage)
     {
         $response = $this->client()->get('/psb-wo-steps');
@@ -44,7 +50,7 @@ class PsbIntegratedRepository implements PsbWoStepInterface
                 })->values();
             })
             // List tidak membawa `order`/`is_active`, jadi lengkapi lewat detail.
-            ->map(fn ($step) => (object) array_merge($step, (array) $this->show((string) $step['id'])));
+            ->map(fn ($step) => $this->show((string) $step['id']));
 
         $perPage = $perPage ?: 10;
         $page = Paginator::resolveCurrentPage() ?: 1;
@@ -67,7 +73,7 @@ class PsbIntegratedRepository implements PsbWoStepInterface
 
         $data = $response->json('data');
 
-        return (object) [
+        return $this->withVisibleExtendComponent((object) [
             'id' => $data['id'],
             'code' => $data['code'],
             'name' => $data['name'],
@@ -80,17 +86,25 @@ class PsbIntegratedRepository implements PsbWoStepInterface
             // `default_variables` belum tersedia di kontrak — lihat catatan di atas.
             'default_component' => $data['default_variables'] ?? [],
             'extend_component' => $data['variables'] ?? [],
-        ];
+        ]);
     }
 
     public function update(string $id, array $data)
     {
+        // clone tanpa filter soft-delete supaya merge extend_component tetap
+        // punya akses ke item yang sudah dihapus sebelumnya (deleted_at-nya).
         $old = $this->show($id);
+
+        $extendComponent = $old->extend_component;
+
+        if (array_key_exists('extend_component', $data)) {
+            $extendComponent = $this->applyExtendComponentUpdates($old->extend_component, $data['extend_component']);
+        }
 
         $response = $this->client()->patch("/psb-wo-steps/{$id}", [
             'description' => $data['description'],
             // Jembatan sementara: lihat catatan ketidakpastian kontrak di atas.
-            'variables' => $data['default_component'] ?? $old->extend_component,
+            'variables' => $extendComponent,
         ]);
 
         if ($response->status() === 404) {
@@ -133,10 +147,12 @@ class PsbIntegratedRepository implements PsbWoStepInterface
             'old_values' => [
                 'description' => $old->description,
                 'default_component' => $old->default_component,
+                'extend_component' => $old->extend_component,
             ],
             'new_values' => [
                 'description' => $new->description,
                 'default_component' => $new->default_component,
+                'extend_component' => $new->extend_component,
             ],
             'changed_by' => Auth::id(),
         ]);

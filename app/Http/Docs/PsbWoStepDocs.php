@@ -87,7 +87,9 @@ class PsbWoStepDocs
                 "default_component": [
                     { "key": "waktu_mulai", "value": null, "is_active": false }
                 ],
-                "extend_component": []
+                "extend_component": [
+                    { "key": "catatan_teknisi", "value": "kondisi normal", "is_active": true, "deleted_at": null }
+                ]
             }
         }
         JSON;
@@ -103,6 +105,17 @@ class PsbWoStepDocs
                 "description": ["The description field is required."],
                 "default_component.0.is_active": ["The default_component.0.is_active field is required when default_component is present."]
             }
+        }
+        JSON;
+
+    public const UPDATE_DEFAULT_COMPONENT_NOT_FOUND = <<<'JSON'
+        {
+            "meta": {
+                "status": 422,
+                "message": "Komponen default 'tidak_ada' tidak ditemukan."
+            },
+            "data": null,
+            "errors": null
         }
         JSON;
 

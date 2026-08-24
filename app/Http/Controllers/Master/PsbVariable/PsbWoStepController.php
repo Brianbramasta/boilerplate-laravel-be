@@ -63,6 +63,7 @@ class PsbWoStepController extends BaseController
     #[UrlParam('id', 'int', description: 'ID psb wo step yang akan diupdate.', example: 1)]
     #[Response(PsbWoStepDocs::UPDATE_SUCCESS, status: 200, description: 'Berhasil mengubah data psb wo step')]
     #[Response(PsbWoStepDocs::UPDATE_VALIDATION_ERROR, status: 422, description: 'Validasi gagal')]
+    #[Response(PsbWoStepDocs::UPDATE_DEFAULT_COMPONENT_NOT_FOUND, status: 422, description: 'default_component merujuk ke key yang tidak ada pada step ini')]
     #[Response(PsbWoStepDocs::NOT_FOUND, status: 404, description: 'Psb wo step dengan id tersebut tidak ditemukan')]
     #[Response(AuthDocs::UNAUTHORIZED, status: 401, description: 'Token tidak dikirim, tidak valid, atau sudah expired')]
     #[Response(PsbWoStepDocs::FORBIDDEN, status: 403, description: 'Role user tidak memiliki akses (bukan it/superadmin)')]

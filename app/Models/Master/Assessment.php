@@ -6,10 +6,11 @@ use App\Models\Concerns\LogsMasterDataChanges;
 use App\Models\Ref\AssessmentCode;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Assessment extends Model
 {
-    use HasUuids, LogsMasterDataChanges;
+    use HasUuids, LogsMasterDataChanges, SoftDeletes;
 
     protected $table = 'mt_assessments';
 

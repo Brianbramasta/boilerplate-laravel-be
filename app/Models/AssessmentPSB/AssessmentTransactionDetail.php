@@ -6,10 +6,11 @@ use App\Models\Master\Assessment;
 use App\Models\Ref\AssessmentCode;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AssessmentTransactionDetail extends Model
 {
-    use HasUuids;
+    use HasUuids, SoftDeletes;
 
     protected $table = 'tr_assessment_details';
 

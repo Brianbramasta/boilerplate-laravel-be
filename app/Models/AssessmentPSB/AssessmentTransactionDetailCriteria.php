@@ -9,10 +9,11 @@ use App\Models\Ref\CriteriaType;
 use App\Models\Ref\ScoreType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AssessmentTransactionDetailCriteria extends Model
 {
-    use HasUuids;
+    use HasUuids, SoftDeletes;
 
     protected $table = 'tr_assessment_detail_criteria';
 

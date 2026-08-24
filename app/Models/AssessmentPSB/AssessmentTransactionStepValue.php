@@ -4,10 +4,11 @@ namespace App\Models\AssessmentPSB;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AssessmentTransactionStepValue extends Model
 {
-    use HasUuids;
+    use HasUuids, SoftDeletes;
 
     protected $table = 'tr_assessment_step_values';
 

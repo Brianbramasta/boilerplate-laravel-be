@@ -8,10 +8,11 @@ use App\Models\Ref\CriteriaType;
 use App\Models\Ref\ScoreType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AssessmentCriteria extends Model
 {
-    use HasUuids, LogsMasterDataChanges;
+    use HasUuids, LogsMasterDataChanges, SoftDeletes;
 
     protected $table = 'mt_assessment_criteria';
 

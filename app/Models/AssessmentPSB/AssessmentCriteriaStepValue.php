@@ -5,10 +5,11 @@ namespace App\Models\AssessmentPSB;
 use App\Models\Master\AssessmentCriteriaStep;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AssessmentCriteriaStepValue extends Model
 {
-    use HasUuids;
+    use HasUuids, SoftDeletes;
 
     protected $table = 'tr_assessment_criteria_step_values';
 

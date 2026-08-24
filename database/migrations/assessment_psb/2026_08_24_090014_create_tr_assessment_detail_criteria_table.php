@@ -28,6 +28,7 @@ return new class extends Migration
             $table->double('calculated_value')->nullable();
             $table->text('description')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->double('max_score')->default(100);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

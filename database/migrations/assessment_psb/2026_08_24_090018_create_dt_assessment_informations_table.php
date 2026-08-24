@@ -30,6 +30,7 @@ return new class extends Migration
             $table->json('cust_extra')->nullable();
             $table->json('erp_extra')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

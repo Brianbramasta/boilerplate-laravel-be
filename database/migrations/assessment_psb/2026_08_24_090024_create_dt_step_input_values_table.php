@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('type_data')->default('number');
             $table->string('value')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

@@ -19,6 +19,7 @@ return new class extends Migration
             $table->uuid('assessment_code_id');
             $table->double('total_score')->default(0);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

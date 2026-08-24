@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('full_name');
             $table->boolean('is_primary')->default(false);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

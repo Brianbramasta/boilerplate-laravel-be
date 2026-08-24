@@ -24,6 +24,7 @@ return new class extends Migration
             $table->bigInteger('cable_detail_history_id')->nullable();
             $table->json('psb_extra')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

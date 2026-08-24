@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('step_code');
             $table->string('step_name');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

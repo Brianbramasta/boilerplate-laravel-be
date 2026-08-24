@@ -25,6 +25,7 @@ return new class extends Migration
             $table->uuid('result_id')->nullable();
             $table->boolean('is_had_draft')->default(false);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

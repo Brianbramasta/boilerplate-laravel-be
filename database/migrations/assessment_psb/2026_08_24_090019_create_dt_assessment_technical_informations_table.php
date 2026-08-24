@@ -25,6 +25,7 @@ return new class extends Migration
             $table->integer('customer_port');
             $table->json('tech_extra')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

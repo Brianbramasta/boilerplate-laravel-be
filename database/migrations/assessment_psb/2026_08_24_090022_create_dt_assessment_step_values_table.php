@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('step_name');
             $table->integer('order_number');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

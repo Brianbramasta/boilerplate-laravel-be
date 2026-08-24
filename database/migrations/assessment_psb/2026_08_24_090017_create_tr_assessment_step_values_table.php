@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('variable_code')->nullable();
             $table->string('variable_name')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

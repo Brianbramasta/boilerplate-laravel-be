@@ -18,6 +18,7 @@ return new class extends Migration
             $table->uuid('created_by')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

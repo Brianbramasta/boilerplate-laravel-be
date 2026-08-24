@@ -24,6 +24,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->uuid('created_by')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

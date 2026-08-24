@@ -20,6 +20,7 @@ return new class extends Migration
             $table->boolean('actual_value')->nullable();
             $table->boolean('is_pass')->default(true);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

@@ -19,6 +19,7 @@ return new class extends Migration
             $table->enum('type_data', ['image', 'datetime', 'date', 'text', 'number']);
             $table->string('value')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

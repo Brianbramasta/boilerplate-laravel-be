@@ -1,0 +1,369 @@
+{
+  "status": "01a05642-ddb2-7214-9054-a278e6f52c58",
+  "notes": "",
+  "assessments": [
+    {
+      "assessment": {
+        "id": "01a03427-64eb-72b4-878e-ed12fd260a63",
+        "name": "Instalasi ODP"
+      },
+      "categories": [
+        {
+          "category": {
+            "id": "01a03427-64e0-739e-8c3c-b3912e9171a8",
+            "name": "Kualitas"
+          },
+          "total_weight_active": 100,
+          "items": [
+            {
+              "id": "01a05720-3739-7062-b5fd-79830726c294",
+              "code": "PN-0001",
+              "name": "Redaman OPM di ODP",
+              "criteria_type": "Single Source",
+              "score": 50,
+              "status": "Aktif",
+              "value": {
+                "criterias": [
+                  {
+                    "variable_key": "redaman_odp",
+                    "value": 5.2
+                  },
+                  {
+                    "variable_key": "redaman_odp",
+                    "value": 5.1
+                  }
+                ],
+                "rules": [
+                  {
+                    "id": "01a05720-3744-709a-a1b5-85ca618d9e6a",
+                    "rule": "Redaman di luar batas wajar",
+                    "is_pass": 1
+                  },
+                  {
+                    "id": "01a05720-3746-7244-af0c-a0e505cd4147",
+                    "rule": "Foto OPM tidak jelas/blur",
+                    "is_pass": 0
+                  }
+                ],
+                "notes": "Dumy notes for Redaman OPM di ODP"
+              }
+            },
+            {
+              "id": "01a05720-3739-7062-b5fd-79830726c295",
+              "code": "PN-0002",
+              "name": "Sambungan Patchcord ODP-DropCore",
+              "criteria_type": "Single Source",
+              "score": 50,
+              "status": "Aktif",
+              "value": {
+                "criterias": [
+                  {
+                    "variable_key": "sambungan_patchcord_odp_dropcore",
+                    "value": "OK"
+                  }
+                ],
+                "rules": [
+                  {
+                    "id": "rule-dumy-1",
+                    "rule": "Dummy rule 1",
+                    "is_pass": 1
+                  },
+                  {
+                    "id": "rule-dumy-2",
+                    "rule": "Dummy rule 2",
+                    "is_pass": 0
+                  }
+                ],
+                "notes": "Dumy notes Sambungan Patchcord ODP-DropCore"
+              }
+            }
+          ]
+        },
+        {
+          "category": {
+            "id": "01a03427-64e3-725a-8956-b5443f265590",
+            "name": "Kerapian"
+          },
+          "total_weight_active": 100,
+          "items": [
+            {
+              "id": "01a0342c-1430-73e0-be57-7c611c77f763",
+              "code": "PN-0003",
+              "name": "Pekerjaan Patchcord ODP",
+              "criteria_type": "Single Source",
+              "score": 50,
+              "status": "Aktif",
+              "value": {
+                "criterias": [
+                  {
+                    "variable_key": "pekerjaan_patchcord_odp",
+                    "value": "Rapi"
+                  }
+                ],
+                "rules": [
+                  {
+                    "id": "rule-dumy-3",
+                    "rule": "Dummy rule 3",
+                    "is_pass": 1
+                  },
+                  {
+                    "id": "rule-dumy-4",
+                    "rule": "Dummy rule 4",
+                    "is_pass": 0
+                  }
+                ],
+                "notes": "Dumy notes Pekerjaan Patchcord ODP"
+              }
+            },
+            {
+              "id": "01a0342c-1430-73e0-be57-7c611c77f764",
+              "code": "PN-0004",
+              "name": "Tutup ODP",
+              "criteria_type": "Single Source",
+              "score": 50,
+              "status": "Aktif",
+              "value": {
+                "criterias": [
+                  {
+                    "variable_key": "tutup_odp",
+                    "value": "Tertutup"
+                  }
+                ],
+                "rules": [
+                  {
+                    "id": "rule-dumy-5",
+                    "rule": "Dummy rule 5",
+                    "is_pass": 1
+                  },
+                  {
+                    "id": "rule-dumy-6",
+                    "rule": "Dummy rule 6",
+                    "is_pass": 0
+                  }
+                ],
+                "notes": "Dumy notes Tutup ODP"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assessment": {
+        "id": "01a03427-64ed-70f0-8da3-1c81a784e6b5",
+        "name": "Instalasi Customer"
+      },
+      "categories": [
+        {
+          "category": {
+            "id": "01a03427-64e0-739e-8c3c-b3912e9171a8",
+            "name": "Kualitas"
+          },
+          "total_weight_active": 100,
+          "items": [
+            {
+              "id": "01a05720-3739-7062-b5fd-79830726c296",
+              "code": "PN-0005",
+              "name": "Redaman OPM di Customer",
+              "criteria_type": "Single Source",
+              "score": 40,
+              "status": "Aktif",
+              "value": {
+                "criterias": [
+                  {
+                    "variable_key": "redaman_opm_customer",
+                    "value": 4.9
+                  }
+                ],
+                "rules": [
+                  {
+                    "id": "rule-dumy-7",
+                    "rule": "Dummy rule 7",
+                    "is_pass": 1
+                  },
+                  {
+                    "id": "rule-dumy-8",
+                    "rule": "Dummy rule 8",
+                    "is_pass": 0
+                  }
+                ],
+                "notes": "Dumy notes Redaman OPM di Customer"
+              }
+            },
+            {
+              "id": "01a05720-3739-7062-b5fd-79830726c297",
+              "code": "PN-0006",
+              "name": "Sambungan Drop Core - Patchcord Modem",
+              "criteria_type": "Single Source",
+              "score": 30,
+              "status": "Aktif",
+              "value": {
+                "criterias": [
+                  {
+                    "variable_key": "sambungan_drop_core_patchcord_modem",
+                    "value": "Bagus"
+                  }
+                ],
+                "rules": [
+                  {
+                    "id": "rule-dumy-9",
+                    "rule": "Dummy rule 9",
+                    "is_pass": 1
+                  },
+                  {
+                    "id": "rule-dumy-10",
+                    "rule": "Dummy rule 10",
+                    "is_pass": 0
+                  }
+                ],
+                "notes": "Dumy notes Sambungan Drop Core - Patchcord Modem"
+              }
+            },
+            {
+              "id": "01a05720-3739-7062-b5fd-79830726c298",
+              "code": "PN-0008",
+              "name": "Hasil Repeat Test",
+              "criteria_type": "Single Source",
+              "score": 30,
+              "status": "Aktif",
+              "value": {
+                "criterias": [
+                  {
+                    "variable_key": "hasil_repeat_test",
+                    "value": "Pass"
+                  }
+                ],
+                "rules": [
+                  {
+                    "id": "rule-dumy-11",
+                    "rule": "Dummy rule 11",
+                    "is_pass": 1
+                  },
+                  {
+                    "id": "rule-dumy-12",
+                    "rule": "Dummy rule 12",
+                    "is_pass": 0
+                  }
+                ],
+                "notes": "Dumy notes Hasil Repeat Test"
+              }
+            }
+          ]
+        },
+        {
+          "category": {
+            "id": "01a03427-64e3-725a-8956-b5443f265591",
+            "name": "Kerapian"
+          },
+          "total_weight_active": 100,
+          "items": [
+            {
+              "id": "01a0342c-1430-73e0-be57-7c611c77f765",
+              "code": "PN-0007",
+              "name": "Pekerjaan Instalasi Modem",
+              "criteria_type": "Single Source",
+              "score": 100,
+              "status": "Aktif",
+              "value": {
+                "criterias": [
+                  {
+                    "variable_key": "pekerjaan_instalasi_modem",
+                    "value": "Selesai"
+                  }
+                ],
+                "rules": [
+                  {
+                    "id": "rule-dumy-13",
+                    "rule": "Dummy rule 13",
+                    "is_pass": 1
+                  },
+                  {
+                    "id": "rule-dumy-14",
+                    "rule": "Dummy rule 14",
+                    "is_pass": 0
+                  }
+                ],
+                "notes": "Dumy notes Pekerjaan Instalasi Modem"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assessment": {
+        "id": "01a03427-64ee-725a-a120-d3fcb7607bdf",
+        "name": "Penarikan"
+      },
+      "categories": [
+        {
+          "category": {
+            "id": "01a03427-64e0-739e-8c3c-b3912e9171a8",
+            "name": "Kualitas"
+          },
+          "total_weight_active": 100,
+          "items": [
+            {
+              "id": "01a05720-3739-7062-b5fd-79830726c299",
+              "code": "PN-0009",
+              "name": "Setelah Redaman Customer - ODP",
+              "criteria_type": "Kalkulasi",
+              "score": 40,
+              "status": "Aktif",
+              "value": {
+                "criterias": [
+                  {
+                    "variable_key": "setelah_redaman_customer_odp",
+                    "value": 7.3
+                  }
+                ],
+                "rules": [
+                  {
+                    "id": "rule-dumy-15",
+                    "rule": "Dummy rule 15",
+                    "is_pass": 1
+                  },
+                  {
+                    "id": "rule-dumy-16",
+                    "rule": "Dummy rule 16",
+                    "is_pass": 0
+                  }
+                ],
+                "notes": "Dumy notes Setelah Redaman Customer - ODP"
+              }
+            },
+            {
+              "id": "01a05720-3739-7062-b5fd-79830726c300",
+              "code": "PN-0010",
+              "name": "Durasi Penarikan",
+              "criteria_type": "Kalkulasi",
+              "score": 60,
+              "status": "Aktif",
+              "value": {
+                "criterias": [
+                  {
+                    "variable_key": "durasi_penarikan",
+                    "value": "02:30"
+                  }
+                ],
+                "rules": [
+                  {
+                    "id": "rule-dumy-17",
+                    "rule": "Dummy rule 17",
+                    "is_pass": 1
+                  },
+                  {
+                    "id": "rule-dumy-18",
+                    "rule": "Dummy rule 18",
+                    "is_pass": 0
+                  }
+                ],
+                "notes": "Dumy notes Durasi Penarikan"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

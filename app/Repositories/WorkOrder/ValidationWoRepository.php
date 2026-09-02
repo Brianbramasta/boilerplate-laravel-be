@@ -10,6 +10,8 @@ use App\Models\AssessmentPSB\AssessmentTransactionDetailCriteria;
 use App\Models\AssessmentPSB\AssessmentTransactionDetailRule;
 use App\Models\AssessmentPSB\AssessmentTransactionStepValue;
 use App\Models\AssessmentPSB\StepInputValue;
+use App\Models\Master\Assessment;
+use App\Models\Master\AssessmentCriteria;
 use App\Models\Ref\AssessmentStatus;
 
 class ValidationWoRepository implements ValidationWoInterface
@@ -27,6 +29,7 @@ class ValidationWoRepository implements ValidationWoInterface
         $query = $baseModel->newQuery()
             ->addSelect("{$baseTable}.id")
             ->addSelect("{$baseTable}.pppoe_secret")
+            ->addSelect("ai.work_order_date as wo_date")
             ->addSelect("ai.no_wo")
             ->addSelect("ai.branch_name")
             ->addSelect("ai.pppoe_secret")
@@ -34,7 +37,8 @@ class ValidationWoRepository implements ValidationWoInterface
             ->addSelect("ati.splitter")
             ->addSelect("atipsb.team_name")
             ->addSelect("pic.full_name as katim")
-            ->addSelect('rs.code as status');
+            ->addSelect('rs.code as status')
+            ->addSelect('rs.name as status_name');
 
         // Kolom yang bisa dicari (searchable)
         $searchableColumns = [
@@ -71,24 +75,65 @@ class ValidationWoRepository implements ValidationWoInterface
             : $query->get();
     }
 
+    public function showMasterVariables()
+    {
+        // Dikelompokkan per assessment_id dulu, supaya proses (mt_assessments)
+        // yang belum punya item sama sekali tetap bisa "diisi" jadi grup kosong
+        // di bawah, bukan hilang dari response.
+        $criteriaByAssessment = AssessmentCriteria::with(['category', 'criteriaType'])
+            ->orderBy('criteria_code')
+            ->get()
+            ->groupBy('assessment_id');
+
+        return Assessment::where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->map(function ($assessment) use ($criteriaByAssessment) {
+                $assessmentItems = $criteriaByAssessment->get($assessment->id, collect());
+
+                $categories = $assessmentItems
+                    ->groupBy('assessment_category_id')
+                    ->map(function ($categoryItems) {
+                        $category = $categoryItems->first()->category;
+
+                        return [
+                            'category' => $category,
+                            'total_weight_active' => (float) $categoryItems->where('is_active', true)->sum('score'),
+                            'items' => $categoryItems->values(),
+                        ];
+                    })
+                    ->values();
+
+                return [
+                    'assessment' => $assessment,
+                    'categories' => $categories,
+                ];
+            });
+    }
+
     // Di ValidationWoRepository.php - Tambahkan method showWoWithRelations
     public function showWoWithRelations(string $id)
     {
         return AssessmentTransaction::where('id', $id)
             ->with([
-                'details' => function ($query) {
-                    $query->with([
-                        'detailCriteria' => function ($q) {
-                            $q->with([
-                                'detailRules',
-                                'stepValues' => function ($sq) {
-                                    $sq->with('inputValues');
-                                }
-                            ]);
-                        }
-                    ]);
-                },
+                // 'details' => function ($query) {
+                //     $query->with([
+                //         'detailCriteria' => function ($q) {
+                //             $q->with([
+                //                 'detailRules',
+                //                 'stepValues' => function ($sq) {
+                //                     $sq->with('inputValues');
+                //                 }
+                //             ]);
+                //         }
+                //     ]);
+                // },
                 // tambahan with lain, contoh relasi 'assessmentStatus' dan 'assessmentInformation'
+                'details',
+                'details.detailCriteria',
+                'details.detailCriteria.detailRules',
+                'details.detailCriteria.stepValues',
+                'details.detailCriteria.stepValues.inputValues',
                 'status',
                 'information',
                 'information.assessmentCode',

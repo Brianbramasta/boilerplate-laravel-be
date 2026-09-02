@@ -33,6 +33,7 @@ class ValidationWoService
     {
         // Gunakan eager loading dengan relasi yang sudah didefinisikan
         $transaction = $this->validationWoInterface->showWoWithRelations($id);
+        $variables = $this->validationWoInterface->showMasterVariables();
 
         if (!$transaction) {
             return null;
@@ -40,6 +41,7 @@ class ValidationWoService
 
         // Build response sesuai struktur request
         $response = [
+            'details' => $transaction->details,
             'status' => $transaction->status->code,
             'no_wo' => $transaction->information->no_wo,
             'customer_name' => $transaction->information->customer_name,
@@ -65,7 +67,7 @@ class ValidationWoService
                 'score_installation_cable_quality' => 100,
                 'score_installation_cable_good' => 100,
             ],
-            'assessments' => []
+            'assessments' => $variables
         ];
 
         foreach ($transaction->details as $assessment) {

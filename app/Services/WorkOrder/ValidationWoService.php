@@ -47,9 +47,9 @@ class ValidationWoService
             'customer_name' => $transaction->information->customer_name,
             'branch_name' => $transaction->information->branch_name,
             'pppoe' => $transaction->pppoe_secret,
-            'katim' => $transaction->status_id,
-            'team' => $transaction->status_id,
-            'access_erp' => $transaction->status_id,
+            'katim' => $transaction->information->picInformations[0]->full_name,
+            'team' => $transaction->information->woPsbInformation->team_name,
+            'access_erp' => $transaction->information->technicalInformation->splitter,
             'start' => $transaction->information->start_work_order,
             'end' => $transaction->information->end_work_order,
             'duration' => $transaction->information->duration_minute,
@@ -57,90 +57,8 @@ class ValidationWoService
             'distance_team' => $transaction->information->woPsbInformation->technician_distance,
             'dropcore' => $transaction->information->woPsbInformation->dropcore,
             'notes' => $transaction->notes ?? '',
-            'conclusion' => [
-                'score' => 100,
-                'score_name' => 'Normal',
-                'score_installation_odp_quality' => 100,
-                'score_installation_odp_good' => 100,
-                'score_installation_customer_quality' => 100,
-                'score_installation_customer_good' => 100,
-                'score_installation_cable_quality' => 100,
-                'score_installation_cable_good' => 100,
-            ],
             'assessments' => $variables
         ];
-
-        foreach ($transaction->details as $assessment) {
-            $assessmentData = [
-                'assessment' => [
-                    'id' => $assessment->assessment_id,
-                    'name' => $assessment->assessment_name
-                ],
-                'categories' => []
-            ];
-
-            foreach ($assessment->detailCriteria as $criteria) {
-                // Build items dari criteria
-                $item = [
-                    'id' => $criteria->criteria_id,
-                    'code' => null, // Tidak tersedia di tabel criteria
-                    'name' => $criteria->criteria_name,
-                    'criteria_type' => $criteria->criteria_type_name ?? 'Single Source',
-                    'score' => $criteria->obtained_score ?? 0,
-                    'status' => 'Aktif', // Default
-                    'value' => [
-                        'criterias' => [],
-                        'rules' => [],
-                        'notes' => $criteria->description
-                    ]
-                ];
-
-                // Build criterias dari stepValues -> inputValues
-                foreach ($criteria->stepValues as $step) {
-                    foreach ($step->inputValues as $stepValue) {
-                        $item['value']['criterias'][] = [
-                            'variable_key' => $stepValue->variable_code,
-                            'value' => $stepValue->value
-                        ];
-                    }
-                }
-
-                // Jika tidak ada stepValues, gunakan data dari criteria
-                if (empty($item['value']['criterias'])) {
-                    $item['value']['criterias'][] = [
-                        'variable_key' => $criteria->criteria_id,
-                        'value' => $criteria->obtained_score ?? 0
-                    ];
-                }
-
-                // Build rules dari detailRules
-                foreach ($criteria->detailRules as $rule) {
-                    $item['value']['rules'][] = [
-                        'id' => $rule->rule_id,
-                        'rule' => $rule->rule_name,
-                        'is_pass' => $rule->is_pass ? 1 : 0
-                    ];
-                }
-
-                // Jika tidak ada rules, beri array kosong
-                if (empty($item['value']['rules'])) {
-                    $item['value']['rules'] = [];
-                }
-
-                $categoryData = [
-                    'category' => [
-                        'id' => $criteria->category_id,
-                        'name' => $criteria->category_name
-                    ],
-                    'total_weight_active' => $criteria->criteria_max_score,
-                    'items' => [$item]
-                ];
-
-                $assessmentData['categories'][] = $categoryData;
-            }
-
-            $response['assessments'][] = $assessmentData;
-        }
 
         return $response;
     }

@@ -2,8 +2,8 @@
     {
         "id": 1,
         "code": "TEK-01",
-        "name": "Mulai Penarikan",
-        "description": "Memulai proses penarikan kabel dari ODP ke lokasi pelanggan.",
+        "name": "Mulai Penarikan Kabel",
+        "description": "Memulai proses penarikan kabel fiber optik dari ODP ke lokasi pelanggan.",
         "order": 1,
         "is_last": false,
         "is_picture": false,
@@ -15,6 +15,12 @@
                 "value": null,
                 "is_active": true,
                 "type_data": "timestamp"
+            },
+            {
+                "key": "status_mulai",
+                "value": null,
+                "is_active": true,
+                "type_data": "text"
             }
         ],
         "extend_component": [],
@@ -24,8 +30,8 @@
     {
         "id": 2,
         "code": "TEK-02",
-        "name": "Pilih Kabel",
-        "description": "Memilih jenis dan panjang kabel drop core yang digunakan.",
+        "name": "Pilih Kabel Dropcore",
+        "description": "Memilih jenis serta mengukur panjang kabel dropcore yang akan digunakan.",
         "order": 2,
         "is_last": false,
         "is_picture": false,
@@ -52,14 +58,26 @@
     {
         "id": 3,
         "code": "TEK-03",
-        "name": "Redaman ODP pada OPM",
-        "description": "Mengukur redaman pada ODP menggunakan OPM.",
+        "name": "Cek Redaman ODP via OPM",
+        "description": "Mengukur dan mendokumentasikan redaman pada ODP menggunakan alat OPM.",
         "order": 3,
         "is_last": false,
         "is_picture": true,
         "is_data": false,
         "is_active": true,
         "default_component": [
+            {
+                "key": "foto",
+                "value": null,
+                "is_active": true,
+                "type_data": "image"
+            },
+            {
+                "key": "timestamp",
+                "value": null,
+                "is_active": true,
+                "type_data": "timestamp"
+            },
             {
                 "key": "redaman_odp",
                 "value": null,
@@ -74,29 +92,62 @@
     {
         "id": 4,
         "code": "TEK-04",
-        "name": "Nilai Sambungan Patchcord ke Drop Core",
-        "description": "Menilai kualitas sambungan patchcord ke drop core.",
+        "name": "Nilai Sambungan Patchcord-DC",
+        "description": "Mengecek dan menilai kualitas sambungan patchcord ke dropcore.",
         "order": 4,
         "is_last": false,
         "is_picture": true,
         "is_data": false,
         "is_active": true,
-        "default_component": [],
-        "extend_component": [],
+        "default_component": [
+            {
+                "key": "foto",
+                "value": null,
+                "is_active": true,
+                "type_data": "image"
+            },
+            {
+                "key": "timestamp",
+                "value": null,
+                "is_active": true,
+                "type_data": "timestamp"
+            }
+        ],
+        "extend_component": [
+            {
+                "key": "input_nilai_sambungan_db",
+                "value": null,
+                "is_active": true,
+                "type_data": "number"
+            }
+        ],
         "created_at": "2026-08-03T11:10:40.000000Z",
         "updated_at": "2026-08-03T11:10:40.000000Z"
     },
     {
         "id": 5,
         "code": "TEK-05",
-        "name": "Instalasi Patchcord ODP Sebelum Ditutup",
-        "description": "Dokumentasi instalasi patchcord pada ODP sebelum ditutup.",
+        "name": "Instalasi Patchcord ODP Pra-Tutup",
+        "description": "Dokumentasi sambungan patchcord di ODP sebelum ditutup.",
         "order": 5,
         "is_last": false,
         "is_picture": true,
         "is_data": false,
         "is_active": true,
-        "default_component": [],
+        "default_component": [
+            {
+                "key": "foto",
+                "value": null,
+                "is_active": true,
+                "type_data": "image"
+            },
+            {
+                "key": "timestamp",
+                "value": null,
+                "is_active": true,
+                "type_data": "timestamp"
+            }
+        ],
         "extend_component": [],
         "created_at": "2026-08-03T11:10:40.000000Z",
         "updated_at": "2026-08-03T11:10:40.000000Z"
@@ -104,14 +155,27 @@
     {
         "id": 6,
         "code": "TEK-06",
-        "name": "Tutup ODP",
-        "description": "Dokumentasi kondisi ODP setelah ditutup kembali.",
+        "name": "Tutup dan Dokumentasi ODP",
+        "description": "Mendokumentasikan kondisi ODP setelah proses penutupan selesai.",
         "order": 6,
         "is_last": false,
         "is_picture": true,
         "is_data": false,
         "is_active": true,
-        "default_component": [],
+        "default_component": [
+            {
+                "key": "foto",
+                "value": null,
+                "is_active": true,
+                "type_data": "image"
+            },
+            {
+                "key": "timestamp",
+                "value": null,
+                "is_active": true,
+                "type_data": "timestamp"
+            }
+        ],
         "extend_component": [],
         "created_at": "2026-08-03T11:10:40.000000Z",
         "updated_at": "2026-08-03T11:10:40.000000Z"
@@ -119,23 +183,43 @@
     {
         "id": 7,
         "code": "TEK-07",
-        "name": "Nilai Sambungan Drop Core ke Patchcord Modem",
-        "description": "Menilai kualitas sambungan drop core ke patchcord modem.",
+        "name": "Nilai Sambungan DC ke Patchcord Modem",
+        "description": "Menilai kualitas sambungan dropcore ke patchcord modem dengan alat pengukur.",
         "order": 7,
         "is_last": false,
         "is_picture": true,
         "is_data": false,
         "is_active": true,
-        "default_component": [],
-        "extend_component": [],
+        "default_component": [
+            {
+                "key": "foto",
+                "value": null,
+                "is_active": true,
+                "type_data": "image"
+            },
+            {
+                "key": "timestamp",
+                "value": null,
+                "is_active": true,
+                "type_data": "timestamp"
+            }
+        ],
+        "extend_component": [
+            {
+                "key": "input_nilai_sambungan_db",
+                "value": null,
+                "is_active": true,
+                "type_data": "number"
+            }
+        ],
         "created_at": "2026-08-03T11:10:40.000000Z",
         "updated_at": "2026-08-03T11:10:40.000000Z"
     },
     {
         "id": 8,
         "code": "TEK-08",
-        "name": "Redaman Pelanggan pada OPM",
-        "description": "Mengukur redaman pada sisi pelanggan menggunakan OPM.",
+        "name": "Redaman Pelanggan via OPM",
+        "description": "Mengukur dan dokumentasikan redaman pada sisi pelanggan menggunakan OPM.",
         "order": 8,
         "is_last": false,
         "is_picture": true,
@@ -143,28 +227,33 @@
         "is_active": true,
         "default_component": [
             {
+                "key": "foto",
+                "value": null,
+                "is_active": true,
+                "type_data": "image"
+            },
+            {
+                "key": "timestamp",
+                "value": null,
+                "is_active": true,
+                "type_data": "timestamp"
+            },
+            {
                 "key": "redaman_pelanggan",
                 "value": null,
                 "is_active": true,
                 "type_data": "number"
             }
         ],
-        "extend_component": [
-            {
-                "key": "test",
-                "value": "Test",
-                "is_active": true,
-                "deleted_at": null
-            }
-        ],
+        "extend_component": [],
         "created_at": "2026-08-03T11:10:40.000000Z",
         "updated_at": "2026-08-24T13:53:05.004249Z"
     },
     {
         "id": 9,
         "code": "TEK-09",
-        "name": "Ajukan Registrasi, Input End Kabel",
-        "description": "Mengajukan registrasi perangkat dan menginput data end kabel.",
+        "name": "Registrasi & Input Ujung Kabel",
+        "description": "Menginput data registrasi perangkat serta data ujung kabel terpasang.",
         "order": 9,
         "is_last": false,
         "is_picture": false,
@@ -172,7 +261,13 @@
         "is_active": true,
         "default_component": [
             {
-                "key": "end_kabel",
+                "key": "data_registrasi",
+                "value": null,
+                "is_active": true,
+                "type_data": "text"
+            },
+            {
+                "key": "data_kabel_ujung",
                 "value": null,
                 "is_active": true,
                 "type_data": "text"
@@ -186,13 +281,104 @@
         "id": 10,
         "code": "TEK-10",
         "name": "Upload Foto Instalasi Modem",
-        "description": "Dokumentasi hasil instalasi modem di lokasi pelanggan.",
+        "description": "Upload foto hasil instalasi modem di rumah pelanggan.",
         "order": 10,
-        "is_last": true,
+        "is_last": false,
         "is_picture": true,
         "is_data": false,
         "is_active": true,
-        "default_component": [],
+        "default_component": [
+            {
+                "key": "timestamp",
+                "value": null,
+                "is_active": true,
+                "type_data": "timestamp"
+            },
+            {
+                "key": "foto",
+                "value": null,
+                "is_active": true,
+                "type_data": "image"
+            }
+        ],
+        "extend_component": [],
+        "created_at": "2026-08-03T11:10:40.000000Z",
+        "updated_at": "2026-08-03T11:10:40.000000Z"
+    },
+    {
+        "id": 11,
+        "code": "TEK-11",
+        "name": "Upload Foto Speed Test",
+        "description": "Upload evidence hasil speed test dari sisi pelanggan.",
+        "order": 11,
+        "is_last": false,
+        "is_picture": true,
+        "is_data": false,
+        "is_active": true,
+        "default_component": [
+            {
+                "key": "timestamp",
+                "value": null,
+                "is_active": true,
+                "type_data": "timestamp"
+            },
+            {
+                "key": "foto",
+                "value": null,
+                "is_active": true,
+                "type_data": "image"
+            }
+        ],
+        "extend_component": [],
+        "created_at": "2026-08-03T11:10:40.000000Z",
+        "updated_at": "2026-08-03T11:10:40.000000Z"
+    },
+    {
+        "id": 12,
+        "code": "TEK-12",
+        "name": "Revisi Jalur (Opsional)",
+        "description": "Input data revisi jalur penarikan kabel jika diperlukan.",
+        "order": 12,
+        "is_last": false,
+        "is_picture": false,
+        "is_data": true,
+        "is_active": true,
+        "default_component": [
+            {
+                "key": "Data Revisi",
+                "value": null,
+                "is_active": true,
+                "type_data": "text"
+            }
+        ],
+        "extend_component": [],
+        "created_at": "2026-08-03T11:10:40.000000Z",
+        "updated_at": "2026-08-03T11:10:40.000000Z"
+    },
+    {
+        "id": 13,
+        "code": "TEK-13",
+        "name": "Selesaikan PSB",
+        "description": "Penanda pekerjaan PSB telah selesai dikerjakan.",
+        "order": 13,
+        "is_last": true,
+        "is_picture": false,
+        "is_data": true,
+        "is_active": true,
+        "default_component": [
+            {
+                "key": "status_customer_active",
+                "value": null,
+                "is_active": true,
+                "type_data": "text"
+            },
+            {
+                "key": "waktu_selesai",
+                "value": null,
+                "is_active": true,
+                "type_data": "timestamp"
+            }
+        ],
         "extend_component": [],
         "created_at": "2026-08-03T11:10:40.000000Z",
         "updated_at": "2026-08-03T11:10:40.000000Z"

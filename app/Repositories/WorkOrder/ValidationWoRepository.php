@@ -13,9 +13,11 @@ use App\Models\AssessmentPSB\StepInputValue;
 use App\Models\Master\Assessment;
 use App\Models\Master\AssessmentCriteria;
 use App\Models\Ref\AssessmentStatus;
+use Illuminate\Support\Facades\Storage;
 
 class ValidationWoRepository implements ValidationWoInterface
 {
+    protected string $path = 'psb-wo-steps.json';
 
     public function __construct() {}
 
@@ -77,10 +79,23 @@ class ValidationWoRepository implements ValidationWoInterface
 
     public function showMasterVariables()
     {
+        if (!Storage::exists($this->path)) {
+            return collect();
+        }
+
+        $variable = collect(json_decode(Storage::get($this->path) ?: '[]', false));
+
+        // echo json_encode($variable->toArray());
         // Dikelompokkan per assessment_id dulu, supaya proses (mt_assessments)
         // yang belum punya item sama sekali tetap bisa "diisi" jadi grup kosong
         // di bawah, bukan hilang dari response.
-        $criteriaByAssessment = AssessmentCriteria::with(['category', 'criteriaType'])
+        $criteriaByAssessment = AssessmentCriteria::with([
+            'category',
+            'criteriaType',
+            'rules',
+            'steps',
+            'steps.stepValues'
+        ])
             ->orderBy('criteria_code')
             ->get()
             ->groupBy('assessment_id');
@@ -88,18 +103,33 @@ class ValidationWoRepository implements ValidationWoInterface
         return Assessment::where('is_active', true)
             ->orderBy('name')
             ->get()
-            ->map(function ($assessment) use ($criteriaByAssessment) {
+            ->map(function ($assessment) use ($criteriaByAssessment, $variable) {
                 $assessmentItems = $criteriaByAssessment->get($assessment->id, collect());
 
                 $categories = $assessmentItems
                     ->groupBy('assessment_category_id')
-                    ->map(function ($categoryItems) {
+                    ->map(function ($categoryItems) use ($variable) {
                         $category = $categoryItems->first()->category;
+
+                        // Tambahkan step_default_values pada setiap step
+                        $items = $categoryItems->values()->map(function ($item) use ($variable) {
+                            // Pastikan steps sudah di-load
+                            if ($item->relationLoaded('steps')) {
+                                $item->steps->each(function ($step) use ($variable) {
+                                    // Pastikan $variable tersedia dalam scope
+                                    $matchingVariable = $variable->first(function ($v) use ($step) {
+                                        return (int)($v->id) === (int)($step->id);
+                                    });
+                                    $step->step_default_values = $matchingVariable->default_component ?? [];
+                                });
+                            }
+                            return $item;
+                        });
 
                         return [
                             'category' => $category,
                             'total_weight_active' => (float) $categoryItems->where('is_active', true)->sum('score'),
-                            'items' => $categoryItems->values(),
+                            'items' => $items,
                         ];
                     })
                     ->values();

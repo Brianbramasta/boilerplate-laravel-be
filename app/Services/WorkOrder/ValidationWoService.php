@@ -33,11 +33,11 @@ class ValidationWoService
     {
         // Gunakan eager loading dengan relasi yang sudah didefinisikan
         $transaction = $this->validationWoInterface->showWoWithRelations($id);
-        $variables = $this->validationWoInterface->showMasterVariables();
 
         if (!$transaction) {
             return null;
         }
+        $variables = $this->validationWoInterface->showMasterVariables($transaction->information->id);
 
         // Build response sesuai struktur request
         $response = [
@@ -182,6 +182,10 @@ class ValidationWoService
                     'step_code' => $stepData['step_code'] ?? null,
                     'step_name' => $stepData['step_name'] ?? null,
                     'order_number' => $stepData['order_number'] ?? 0,
+                    // Jika hanya ada submitted_at
+                    'created_at' => isset($stepData['submitted_at']) ? $stepData['submitted_at'] : null,
+                    'updated_at' => isset($stepData['submitted_at']) ? $stepData['submitted_at'] : null,
+
                 ];
 
                 $step = $this->woInterface->upsertAssessmentStep($stepPayload, null);
@@ -225,129 +229,105 @@ class ValidationWoService
             // 1. Update main transaction
             $assessmentTransactionData = [
                 'id' => $id,
-                'status_id' => $data['status'] ?? null,
-                'notes' => $data['notes'] ?? null,
+                // 'status_id' => $data['status'] ?? null,
+                // 'notes' => $data['notes'] ?? null,
             ];
+
+            // Konversi status code menjadi status id
+            if (isset($data['status']) && is_string($data['status'])) {
+                $statusObj = $this->woInterface->checkStatusCode($data['status']);
+                if ($statusObj && isset($statusObj->id)) {
+                    $assessmentTransactionData['status_id'] = $statusObj->id;
+                } else {
+                    throw new \Exception('Status code tidak ditemukan atau tidak valid.');
+                }
+            }
+
             $this->validationWoInterface->storeWo([$assessmentTransactionData], $id);
 
-            // 2. Prepare all data
-            $assessmentDetails = [];
-            $criteriaDetails = [];
-            $ruleDetails = [];
-            $stepDetails = [];
-            $stepValueDetails = [];
-
             foreach ($data['assessments'] as $assessmentData) {
-                $assessmentId = $assessmentData['assessment']['id'];
-
-                // Assessment detail
-                $assessmentDetails[] = [
-                    'id' => $assessmentId,
+                // 1. Store assessment detail right away and get its ID
+                $assessmentDetailPayload = [
+                    'id' => $assessmentData['assessment']['id'] ?? null,
                     'assessment_transaction_id' => $id,
-                    'assessment_id' => $assessmentData['assessment']['id'],
-                    'assessment_name' => $assessmentData['assessment']['name'],
-                    'assessment_code_id' => null,
-                    'total_score' => 0
+                    'assessment_id' => $assessmentData['assessment']['id'] ?? null,
+                    'assessment_name' => $assessmentData['assessment']['name'] ?? null,
+                    'assessment_code_id' => $assessmentData['assessment']['code'] ?? null,
+                    'total_score' => $assessmentData['assessment']['total_score'] ?? 0
                 ];
+                $assessmentDetailModel = $this->validationWoInterface->upsertAssessmentWo($assessmentDetailPayload, $assessmentDetailPayload['id']);
+                $assessmentDetailId = is_array($assessmentDetailModel) && isset($assessmentDetailModel[0]['id'])
+                    ? $assessmentDetailModel[0]['id']
+                    : ($assessmentDetailModel->id ?? $assessmentDetailPayload['id']);
 
-                // Categories
+                // 2. Category loop
                 foreach ($assessmentData['categories'] as $categoryData) {
-                    $categoryId = $categoryData['category']['id'];
-
-                    // Criteria
-                    $criteriaDetails[] = [
-                        'id' => $categoryId,
-                        'assessment_detail_id' => $assessmentId,
-                        'criteria_id' => $categoryData['category']['id'],
-                        'criteria_name' => $categoryData['category']['name'],
-                        'category_id' => $categoryData['category']['id'],
-                        'category_name' => $categoryData['category']['name'],
-                        'criteria_max_score' => $categoryData['total_weight_active'],
-                        'criteria_type_id' => null,
-                        'criteria_type_name' => null,
-                        'operation_id' => null,
-                        'score_type_id' => null,
-                        'max_score' => $categoryData['total_weight_active'],
-                        'obtained_score' => 0,
-                        'calculated_value' => null,
-                        'description' => null
+                    $criteriaPayload = [
+                        'id' => $categoryData['category']['id'] ?? null,
+                        'assessment_detail_id' => $assessmentDetailId,
+                        'criteria_id' => $categoryData['category']['criteria_id'] ?? null,
+                        'criteria_name' => $categoryData['category']['criteria_name'] ?? null,
+                        'category_id' => $categoryData['category']['category_id'] ?? null,
+                        'category_name' => $categoryData['category']['category_name'] ?? null,
+                        'criteria_type_id' => $categoryData['category']['criteria_type_id'] ?? null,
+                        'criteria_type_name' => $categoryData['category']['criteria_type_name'] ?? null,
+                        'operation_id' => $categoryData['category']['operation_id'] ?? null,
+                        'score_type_id' => $categoryData['category']['score_type_id'] ?? null,
+                        'max_score' => $categoryData['category']['max_score'] ?? 0,
+                        'obtained_score' => $categoryData['category']['obtained_score'] ?? 0,
+                        'calculated_value' => $categoryData['category']['calculate_value'] ?? null,
+                        'description' => $categoryData['category']['description'] ?? null
                     ];
+                    $criteriaModel = $this->validationWoInterface->upsertAssessmentDetailCriteriaWo($criteriaPayload, $criteriaPayload['id']);
+                    $criteriaTransactionId = is_array($criteriaModel) && isset($criteriaModel[0]['id'])
+                        ? $criteriaModel[0]['id']
+                        : ($criteriaModel->id ?? $criteriaPayload['id']);
 
-                    // Items
+                    // 3. Items
                     foreach ($categoryData['items'] as $itemData) {
-                        // Rules
+                        // 4. Rules
                         foreach ($itemData['value']['rules'] as $ruleData) {
-                            $ruleDetails[] = [
+                            $rulePayload = [
                                 'id' => $ruleData['id'],
-                                'criteria_transaction_id' => $categoryId,
+                                'criteria_transaction_id' => $criteriaTransactionId,
                                 'rule_id' => $ruleData['id'],
                                 'rule_name' => $ruleData['rule'],
-                                'expected_value' => null,
-                                'actual_value' => $ruleData['is_pass'],
-                                'is_pass' => (bool) $ruleData['is_pass']
+                                'expected_value' => false,
+                                'actual_value' => $ruleData['is_checked'],
+                                'is_pass' => (bool) $ruleData['is_checked']
                             ];
+                            $this->validationWoInterface->upsertAssessmentCriteriaRuleWo($rulePayload, $rulePayload['id']);
                         }
 
-                        // Steps (if exists)
-                        if (isset($itemData['value']['steps']) && is_array($itemData['value']['steps'])) {
-                            foreach ($itemData['value']['steps'] as $stepData) {
-                                $stepDetails[] = [
+                        // 5. Steps (jika ada)
+                        if (isset($itemData['value']['criterias']) && is_array($itemData['value']['criterias'])) {
+                            foreach ($itemData['value']['criterias'] as $stepData) {
+                                $stepPayload = [
                                     'id' => $stepData['id'] ?? null,
-                                    'criteria_transaction_id' => $categoryId,
+                                    'criteria_transaction_id' => $criteriaTransactionId,
                                     'order' => $stepData['order'] ?? 0,
                                     'step_code' => $stepData['step_code'] ?? null,
-                                    'variable_code' => $stepData['variable_code'] ?? null,
+                                    'variable_code' => $stepData['variable_key'] ?? null,
                                     'variable_name' => $stepData['variable_name'] ?? null,
                                 ];
+                                $stepModel = $this->validationWoInterface->upsertAssessmentCriteriaStepWo($stepPayload, $stepPayload['id']);
+                                $stepId = is_array($stepModel) && isset($stepModel[0]['id'])
+                                    ? $stepModel[0]['id']
+                                    : ($stepModel->id ?? $stepPayload['id']);
 
-                                // Step Values
-                                if (isset($stepData['values']) && is_array($stepData['values'])) {
-                                    foreach ($stepData['values'] as $valueData) {
-                                        $stepValueDetails[] = [
-                                            'id' => $valueData['id'] ?? null,
-                                            'assessment_step_values_id' => $stepData['id'] ?? null,
-                                            'variable_name' => $valueData['variable_name'] ?? null,
-                                            'variable_code' => $valueData['variable_code'] ?? null,
-                                            'order' => $valueData['order'] ?? 0,
-                                            'type_data' => $valueData['type_data'] ?? null,
-                                            'value' => $valueData['value'] ?? null,
-                                        ];
-                                    }
-                                }
+                                $stepValuePayload = [
+                                    'id' => $stepId,
+                                    'assessment_step_values_id' => $stepId,
+                                    'variable_name' => $stepData['variable_name'] ?? null,
+                                    'variable_code' => $stepData['variable_key'] ?? null,
+                                    'order' => $stepData['order'] ?? 0,
+                                    'type_data' => $stepData['type_data'] ?? null,
+                                    'value' => $stepData['value'] ?? null,
+                                ];
+                                $this->validationWoInterface->upsertAssessmentCriteriaStepValueWo($stepValuePayload, $stepValuePayload['id']);
                             }
                         }
                     }
-                }
-            }
-
-            // 3. Execute upserts in sequence
-            if (!empty($assessmentDetails)) {
-                foreach ($assessmentDetails as $detail) {
-                    $this->validationWoInterface->upsertAssessmentWo([$detail], $detail['id']);
-                }
-            }
-
-            if (!empty($criteriaDetails)) {
-                foreach ($criteriaDetails as $criteria) {
-                    $this->validationWoInterface->upsertAssessmentDetailCriteriaWo([$criteria], $criteria['id']);
-                }
-            }
-
-            if (!empty($ruleDetails)) {
-                foreach ($ruleDetails as $rule) {
-                    $this->validationWoInterface->upsertAssessmentCriteriaRuleWo([$rule], $rule['id']);
-                }
-            }
-
-            if (!empty($stepDetails)) {
-                foreach ($stepDetails as $step) {
-                    $this->validationWoInterface->upsertAssessmentCriteriaStepWo([$step], $step['id']);
-                }
-            }
-
-            if (!empty($stepValueDetails)) {
-                foreach ($stepValueDetails as $stepValue) {
-                    $this->validationWoInterface->upsertAssessmentCriteriaStepValueWo([$stepValue], $stepValue['id']);
                 }
             }
 

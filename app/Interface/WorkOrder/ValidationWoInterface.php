@@ -7,7 +7,7 @@ interface ValidationWoInterface
     public function index(array $data);
 
     public function showStatuses();
-    public function showMasterVariables();
+    public function showMasterVariables(string $id);
     public function showWoWithRelations(string $id);
     public function storeWo(array $data, ?string $id);
 

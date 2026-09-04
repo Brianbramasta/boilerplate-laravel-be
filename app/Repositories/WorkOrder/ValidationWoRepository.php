@@ -77,7 +77,7 @@ class ValidationWoRepository implements ValidationWoInterface
             : $query->get();
     }
 
-    public function showMasterVariables()
+    public function showMasterVariables(string $assessmentInformationId)
     {
         if (!Storage::exists($this->path)) {
             return collect();
@@ -91,6 +91,8 @@ class ValidationWoRepository implements ValidationWoInterface
         // di bawah, bukan hilang dari response.
         $criteriaByAssessment = AssessmentCriteria::with([
             'category',
+            'operation',
+            'scoreType',
             'criteriaType',
             'rules',
             'steps',
@@ -103,28 +105,127 @@ class ValidationWoRepository implements ValidationWoInterface
         return Assessment::where('is_active', true)
             ->orderBy('name')
             ->get()
-            ->map(function ($assessment) use ($criteriaByAssessment, $variable) {
+            ->map(function ($assessment) use ($criteriaByAssessment, $variable, $assessmentInformationId) {
                 $assessmentItems = $criteriaByAssessment->get($assessment->id, collect());
 
                 $categories = $assessmentItems
                     ->groupBy('assessment_category_id')
-                    ->map(function ($categoryItems) use ($variable) {
+                    ->map(function ($categoryItems) use ($variable, $assessmentInformationId) {
                         $category = $categoryItems->first()->category;
 
-                        // Tambahkan step_default_values pada setiap step
-                        $items = $categoryItems->values()->map(function ($item) use ($variable) {
+                        // Tambahkan step_default_values pada setiap step,
+                        // dan flag is_default pada step_value jika variable_code sama dengan key pada step_default_values
+                        $items = $categoryItems->values()->map(function ($item) use ($variable, $assessmentInformationId) {
                             // Pastikan steps sudah di-load
                             if ($item->relationLoaded('steps')) {
-                                $item->steps->each(function ($step) use ($variable) {
+                                $item->steps->each(function ($step) use ($variable, $assessmentInformationId) {
                                     // Pastikan $variable tersedia dalam scope
+                                    // var_dump($step->toArray());
                                     $matchingVariable = $variable->first(function ($v) use ($step) {
-                                        return (int)($v->id) === (int)($step->id);
+                                        return (int)($v->id) === (int)($step->step_id);
                                     });
-                                    $step->step_default_values = $matchingVariable->default_component ?? [];
+
+                                    // step_default_values: pada setiap item tambahkan property 'value'
+                                    $stepDefaultValues = [];
+                                    $defaultComponent = $matchingVariable->default_component ?? [];
+
+                                    // var_dump($defaultComponent);
+
+                                    foreach ($defaultComponent as $componentItem) {
+                                        $itemWithValue = (array) $componentItem;
+                                        // Ambil value dari tabel dt_assessment_step_values berdasarkan step id
+                                        $stepValueModel = \App\Models\AssessmentPSB\AssessmentStepValue::where('assessment_information_id', $assessmentInformationId)
+                                            ->where('step_id', $step->step_id)
+                                            ->first();
+
+
+                                        if ($stepValueModel) {
+
+                                            $dataValue = \App\Models\AssessmentPSB\AssessmentStepDataValue::where('assessment_step_values_id', $stepValueModel->id)
+                                                ->where('data_code', $itemWithValue['key'] ?? null)
+                                                ->first();
+
+                                            $itemWithValue['value'] = $dataValue ? $dataValue->value : null;
+
+                                            $dataValue = \App\Models\AssessmentPSB\AssessmentStepDataValue::where('assessment_step_values_id', $stepValueModel->id)
+                                                ->where('data_code', 'timestamp')
+                                                ->first();
+                                            $itemWithValue['timestamp'] = $dataValue && $dataValue->value
+                                                ? $dataValue->value
+                                                : ($stepValueModel ? $stepValueModel->updated_at : null);
+                                        } else {
+                                            $itemWithValue['value'] = null;
+                                        }
+
+                                        $stepDefaultValues[] = (object)$itemWithValue;
+                                    }
+                                    $step->step_default_values = $stepDefaultValues;
+
+                                    // Tambahkan flag is_default pada stepValues jika variable_code sama dengan key pada step_default_values
+                                    if ($step->relationLoaded('stepValues')) {
+                                        foreach ($step->stepValues as $stepValue) {
+                                            $isDefault = false;
+                                            foreach ($step->step_default_values as $defaultValue) {
+                                                if (
+                                                    isset($defaultValue->key) &&
+                                                    isset($stepValue->variable_code) &&
+                                                    $stepValue->variable_code === $defaultValue->key
+                                                ) {
+                                                    $isDefault = true;
+                                                    break;
+                                                }
+                                            }
+                                            // Tambahkan value juga pada stepValue dari tabel dt_assessment_step_data_values jika ada, berdasarkan assessment_step_values_id dan variable_code
+                                            $stepValueModel = \App\Models\AssessmentPSB\AssessmentStepValue::where('assessment_information_id', $assessmentInformationId)
+                                                ->where('step_id', $step->step_id)
+                                                ->first();
+
+                                            if ($stepValueModel) {
+                                                $dataValue = \App\Models\AssessmentPSB\AssessmentStepDataValue::where('assessment_step_values_id', $stepValueModel->id)
+                                                    ->where('data_code', $stepValue->variable_code ?? null)
+                                                    ->first();
+                                                $stepValue->value = $dataValue ? $dataValue->value : null;
+
+                                                $dataValue = \App\Models\AssessmentPSB\AssessmentStepDataValue::where('assessment_step_values_id', $stepValueModel->id)
+                                                    ->where('data_code', 'timestamp')
+                                                    ->first();
+                                                $stepValue->timestamp = $dataValue && $dataValue->value
+                                                    ? $dataValue->value
+                                                    : ($stepValueModel ? $stepValueModel->updated_at : null);
+                                            } else {
+                                                $stepValue->value = null;
+                                            }
+
+                                            $stepValue->is_default = $isDefault;
+                                        }
+                                    }
                                 });
                             }
+
+                            // tambahkan operation_name dan score_name dalam item
+                            if (isset($item['operation_id'])) {
+                                $item['operation_name'] = $item->operation->name ?? null;
+                                $item['operation_code'] = $item->operation->code ?? null;
+                                $item['operation_symbol'] = $item->operation->symbol ?? null;
+                            } else {
+                                $item['operation_name'] = null;
+                                $item['operation_code'] = null;
+                                $item['operation_symbol'] = null;
+                            }
+
+                            if (isset($item['score_type_id'])) {
+                                $item['score_name'] = $item->scoreType->name ?? null;
+                                $item['score_code'] = $item->scoreType->code ?? null;
+                                $item['score_symbol'] = $item->scoreType->symbol ?? null;
+                            } else {
+                                $item['score_name'] = null;
+                                $item['score_code'] = null;
+                                $item['score_symbol'] = null;
+                            }
+
                             return $item;
                         });
+
 
                         return [
                             'category' => $category,
@@ -183,23 +284,14 @@ class ValidationWoRepository implements ValidationWoInterface
 
     public function storeWo(array $data, ?string $id)
     {
-        return AssessmentTransaction::upsert(
-            $data,
-            ['id'],
-            [
-                'pppoe_secret',
-                'assessment_code_id',
-                'work_order_id',
-                'current_pic_id',
-                'company_code',
-                'system_code',
-                'started_at',
-                'completed_at',
-                'status_id',
-                'result_id',
-                'is_had_draft',
-            ]
-        );
+        if ($id) {
+            $transaction = AssessmentTransaction::find($id);
+            if ($transaction) {
+                $transaction->update($data);
+                return $transaction;
+            }
+        }
+        return null;
     }
 
     public function showAssessmentWo(string $id)
@@ -219,16 +311,9 @@ class ValidationWoRepository implements ValidationWoInterface
 
     public function upsertAssessmentWo(array $data, ?string $id)
     {
-        return AssessmentTransactionDetail::upsert(
+        return AssessmentTransactionDetail::updateOrCreate(
+            ['id' => $id],
             $data,
-            ['id'],
-            [
-                'assessment_transaction_id',
-                'assessment_id',
-                'assessment_name',
-                'assessment_code_id',
-                'total_score'
-            ]
         );
     }
 
@@ -249,25 +334,9 @@ class ValidationWoRepository implements ValidationWoInterface
 
     public function upsertAssessmentDetailCriteriaWo(array $data, ?string $id)
     {
-        return AssessmentTransactionDetailCriteria::upsert(
+        return AssessmentTransactionDetailCriteria::updateOrCreate(
+            ['id' => $id],
             $data,
-            ['id'],
-            [
-                'assessment_detail_id',
-                'criteria_id',
-                'criteria_name',
-                'category_id',
-                'category_name',
-                'criteria_max_score',
-                'criteria_type_id',
-                'criteria_type_name',
-                'operation_id',
-                'score_type_id',
-                'max_score',
-                'obtained_score',
-                'calculated_value',
-                'description'
-            ]
         );
     }
 
@@ -288,17 +357,9 @@ class ValidationWoRepository implements ValidationWoInterface
 
     public function upsertAssessmentCriteriaRuleWo(array $data, ?string $id)
     {
-        return AssessmentTransactionDetailRule::upsert(
+        return AssessmentTransactionDetailRule::updateOrCreate(
+            ['id' => $id],
             $data,
-            ['id'],
-            [
-                'criteria_transaction_id',
-                'rule_id',
-                'rule_name',
-                'expected_value',
-                'actual_value',
-                'is_pass',
-            ]
         );
     }
 
@@ -319,16 +380,9 @@ class ValidationWoRepository implements ValidationWoInterface
 
     public function upsertAssessmentCriteriaStepWo(array $data, ?string $id)
     {
-        return AssessmentTransactionStepValue::upsert(
+        return AssessmentTransactionStepValue::updateOrCreate(
+            ['id' => $id],
             $data,
-            ['id'],
-            [
-                'criteria_transaction_id',
-                'order',
-                'step_code',
-                'variable_code',
-                'variable_name',
-            ]
         );
     }
 
@@ -349,17 +403,9 @@ class ValidationWoRepository implements ValidationWoInterface
 
     public function upsertAssessmentCriteriaStepValueWo(array $data, ?string $id)
     {
-        return StepInputValue::upsert(
+        return StepInputValue::updateOrCreate(
+            ['id' => $id],
             $data,
-            ['id'],
-            [
-                'assessment_step_values_id',
-                'variable_name',
-                'variable_code',
-                'order',
-                'type_data',
-                'value',
-            ]
         );
     }
 }

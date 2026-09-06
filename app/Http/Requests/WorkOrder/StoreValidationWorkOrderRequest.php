@@ -34,18 +34,18 @@ class StoreValidationWorkOrderRequest extends BaseRequest
             'assessments.*.categories.*.category.calculate_value' => ['nullable', 'numeric'],
             'assessments.*.categories.*.category.description' => ['nullable', 'string'],
 
-            'assessments.*.categories.*.items.*.value' => ['required', 'array'],
-            'assessments.*.categories.*.items.*.value.criterias' => ['required', 'array'],
-            'assessments.*.categories.*.items.*.value.criterias.*.step_code' => ['required', 'string'],
-            'assessments.*.categories.*.items.*.value.criterias.*.variable_key' => ['required', 'string'],
-            'assessments.*.categories.*.items.*.value.criterias.*.type_data' => ['nullable'],
-            'assessments.*.categories.*.items.*.value.criterias.*.value' => ['nullable'],
+            'assessments.*.categories.*.item' => ['required'],
+            'assessments.*.categories.*.item.criterias' => ['required', 'array'],
+            'assessments.*.categories.*.item.criterias.*.step_code' => ['required', 'string'],
+            'assessments.*.categories.*.item.criterias.*.variable_key' => ['required', 'string'],
+            'assessments.*.categories.*.item.criterias.*.type_data' => ['nullable'],
+            'assessments.*.categories.*.item.criterias.*.value' => ['nullable'],
 
-            'assessments.*.categories.*.items.*.value.rules' => ['required', 'array'],
-            'assessments.*.categories.*.items.*.value.rules.*.id' => ['required', 'string'],
-            'assessments.*.categories.*.items.*.value.rules.*.rule' => ['required', 'string'],
-            'assessments.*.categories.*.items.*.value.rules.*.is_checked' => ['nullable', 'boolean'],
-            'assessments.*.categories.*.items.*.value.notes' => ['nullable', 'string'],
+            'assessments.*.categories.*.item.rules' => ['required', 'array'],
+            'assessments.*.categories.*.item.rules.*.id' => ['required', 'string'],
+            'assessments.*.categories.*.item.rules.*.rule' => ['required', 'string'],
+            'assessments.*.categories.*.item.rules.*.is_checked' => ['nullable', 'boolean'],
+            'assessments.*.categories.*.item.notes' => ['nullable', 'string'],
         ];
     }
 

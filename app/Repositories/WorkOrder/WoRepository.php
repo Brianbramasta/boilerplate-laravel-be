@@ -48,6 +48,21 @@ class WoRepository implements WoInterface
         return $query->first();
     }
 
+    public function findByPppoeSecret(string $pppoeSecret)
+    {
+        // Inisialisasi model dan tabel
+        $baseModel = new AssessmentTransaction;
+        $baseTable = $baseModel->getTable();
+
+        // Query dasar dengan where clause sesuai pppoe_secret
+        $query = $baseModel->newQuery()
+            ->addSelect("{$baseTable}.*");
+
+        $query->where("{$baseTable}.pppoe_secret", $pppoeSecret);
+
+        return $query->first();
+    }
+
     public function storeWo(array $data, ?string $id)
     {
         return AssessmentTransaction::updateOrCreate(

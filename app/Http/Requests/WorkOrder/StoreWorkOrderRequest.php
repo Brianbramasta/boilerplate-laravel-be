@@ -21,6 +21,7 @@ class StoreWorkOrderRequest extends BaseRequest
             'customer.regional_name' => 'required|string',
 
             'technical_data' => 'required|array',
+            'technical_data.area_id' => 'required|string',
             'technical_data.area_name' => 'required|string',
             'technical_data.area_code' => 'required|string',
             'technical_data.area_primary_id' => 'nullable',
@@ -51,7 +52,18 @@ class StoreWorkOrderRequest extends BaseRequest
             'pic.*.nip' => 'required|string',
             'pic.*.nick_name' => 'required|string',
             'pic.*.full_name' => 'required|string',
-            'pic.*.order' => 'required|integer',
+            'pic.*.order' => [
+                'required',
+                'integer',
+                function ($attribute, $value, $fail) {
+                    $orders = collect(request()->input('pic', []))
+                        ->pluck('order');
+
+                    if ($orders->duplicates()->isNotEmpty()) {
+                        $fail('The order value must be unique across the entire request, even in different arrays.');
+                    }
+                }
+            ],
 
             'step' => 'required|array|min:1',
             'step.*.step_id' => 'required|string',
@@ -65,6 +77,65 @@ class StoreWorkOrderRequest extends BaseRequest
             'step.*.data_values.*.type_data' => 'required|string|in:image,datetime,date,text,number',
             'step.*.data_values.*.value' => 'required',
         ];
+    }
+
+    public function getErpExtraData()
+    {
+        $requiredFields = [
+            'assessment_type'
+        ];
+
+        $data = $this->all();
+        return array_diff_key($data, array_flip($requiredFields));
+    }
+
+    public function getCustExtraData()
+    {
+        $requiredFields = [
+            'customer_name',
+            'address',
+            'pppoe_secret',
+            'branch_id',
+            'branch_name',
+            'regional_name'
+        ];
+
+        $data = $this->input('customer', []);
+        return array_diff_key($data, array_flip($requiredFields));
+    }
+    public function getTechExtraData()
+    {
+        $requiredFields = [
+            'area_id',
+            'area_name',
+            'area_code',
+            'area_primary_id',
+            'area_primary_name',
+            'area_primary_code',
+            'splitter_id',
+            'spliter',
+            'customer_port'
+        ];
+
+        $data = $this->input('technical_data', []);
+        return array_diff_key($data, array_flip($requiredFields));
+    }
+    public function getPsbExtraData()
+    {
+        $requiredFields = [
+            'team_id',
+            'team_name',
+            'sales_distance',
+            'technician_distance',
+            'dropcore',
+            'regional_name',
+            'cable_status',
+            'cable_history_id',
+            'cable_detail_history_id'
+        ];
+
+        $data = $this->input('work_order.detail', []);
+        return array_diff_key($data, array_flip($requiredFields));
     }
 
     public function messages()

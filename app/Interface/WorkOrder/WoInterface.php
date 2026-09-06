@@ -8,6 +8,8 @@ interface WoInterface
 
     public function checkStatusCode(string $code);
     public function checkAssessmentCode(string $code);
+    public function findByPppoeSecret(string $pppoeSecret);
+
     // Work Order utama
     public function storeWo(array $data, ?string $id);
 

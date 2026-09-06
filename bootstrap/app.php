@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'jwt' => \App\Http\Middleware\JwtMiddleware::class,
             'jwt.optional' => \App\Http\Middleware\OptionalJwtMiddleware::class,
             'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'api.key' => \App\Http\Middleware\ApiKeyMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

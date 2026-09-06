@@ -6,8 +6,8 @@ use App\Http\Controllers\BaseController;
 use App\Http\Requests\WorkOrder\IndexWorkOrderRequest;
 use App\Http\Requests\WorkOrder\StoreValidationWorkOrderRequest;
 use App\Http\Requests\WorkOrder\StoreWorkOrderRequest;
+use App\Http\Resources\WorkOrder\WoValidationResource;
 use App\Services\WorkOrder\ValidationWoService;
-use Illuminate\Http\Request;
 
 class ValidationController extends BaseController
 {
@@ -65,6 +65,7 @@ class ValidationController extends BaseController
     {
         try {
             $data = $this->validationWoService->showWo($id);
+            // return $this->successResponse(new WoValidationResource($data), 'Berhasil mengambil detail validasi WO');
             return $this->successResponse($data, 'Berhasil mengambil detail validasi WO');
         } catch (\Throwable $th) {
             return api()->handle($th);
@@ -74,7 +75,7 @@ class ValidationController extends BaseController
     public function store(StoreWorkOrderRequest $request)
     {
         try {
-            $data = $this->validationWoService->storeWo($request->all());
+            $data = $this->validationWoService->storeWo($request);
             return $this->successResponse($data, 'Berhasil menyimpan data validasi WO');
         } catch (\Throwable $th) {
             return api()->handle($th);

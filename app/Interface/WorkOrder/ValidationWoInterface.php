@@ -9,7 +9,7 @@ interface ValidationWoInterface
     public function showStatuses();
     public function showMasterVariables(string $id);
     public function showWoWithRelations(string $id);
-    public function storeWo(array $data, ?string $id);
+    public function updateValidasiWo(array $data, string $id);
 
     public function showAssessmentWo(string $id);
     public function upsertAssessmentWo(array $data, ?string $id);

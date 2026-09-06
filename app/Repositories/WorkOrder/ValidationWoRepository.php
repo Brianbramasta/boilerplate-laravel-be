@@ -223,6 +223,14 @@ class ValidationWoRepository implements ValidationWoInterface
                                 $item['score_symbol'] = null;
                             }
 
+                            if (isset($item['criteria_type_id'])) {
+                                $item['criteria_type_name'] = $item->criteriaType->name ?? null;
+                                $item['criteria_type_code'] = $item->criteriaType->code ?? null;
+                            } else {
+                                $item['criteria_type_name'] = null;
+                                $item['criteria_type_code'] = null;
+                            }
+
                             return $item;
                         });
 
@@ -282,7 +290,7 @@ class ValidationWoRepository implements ValidationWoInterface
         return AssessmentStatus::get();
     }
 
-    public function storeWo(array $data, ?string $id)
+    public function updateValidasiWo(array $data, string $id)
     {
         if ($id) {
             $transaction = AssessmentTransaction::find($id);

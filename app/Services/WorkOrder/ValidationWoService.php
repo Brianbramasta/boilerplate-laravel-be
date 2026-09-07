@@ -88,11 +88,12 @@ class ValidationWoService
                     }
 
                     // Format item dengan data dari detail
-                    $formattedItem['detail_criteria_id'] = $detailCriteria->id ?? null;
                     $formattedItem = $item;
+                    $formattedItem['detail_criteria_id'] = $detailCriteria->id ?? null;
                     $formattedItem['obtained_score'] = $detailCriteria->obtained_score ?? 0;
                     $formattedItem['calculated_value'] = $detailCriteria->calculated_value ?? null;
                     $formattedItem['description'] = $detailCriteria->description ?? null;
+                    // var_dump('tes', $formattedItem['detail_criteria_id'], $formattedItem['description']);
 
                     // Update rules dengan actual_value dan is_pass dari detail
                     if (isset($formattedItem['rules']) && $detailCriteria) {
@@ -113,37 +114,56 @@ class ValidationWoService
                         }
                     }
 
-                    // Update steps dengan nilai aktual dari detail
-                    if (isset($formattedItem['steps']) && $detailCriteria) {
-                        foreach ($formattedItem['steps'] as &$step) {
-                            $matchingStep = collect($detailCriteria->stepValues ?? [])
-                                ->firstWhere('step_code', $step['step_code']);
+                    // Karena formattedItem adalah object, akses sebagai object
+                    if (isset($formattedItem->steps) && $detailCriteria) {
+                        // Iterasi dengan key agar bisa dimodifikasi
+                        foreach ($formattedItem->steps as $key => $step) {
+                            $matchingStep = $detailCriteria->stepValues->firstWhere('step_code', $step['step_code']);
 
+                            $stepValues = [];
                             if ($matchingStep && isset($matchingStep->inputValues)) {
-                                $step['step_values'] = $matchingStep->inputValues->map(function ($input) {
-                                    // Convert to array jika object
-                                    $input = (array) $input;
+                                $stepValues = $matchingStep->inputValues->map(function ($input) use ($step) {
+                                    // Cari default value dari step (bukan dari matching input)
+                                    $is_default = null;
+                                    $timestamp = null;
+                                    if (isset($step->stepValues)) {
+                                        // Cari key step_values yang variable_code/value_code/value_name sama dengan input
+                                        foreach ($step->stepValues as $stepVal) {
+                                            // Cocokkan variable_code pada step_values dan input
+                                            if (
+                                                (isset($input->variable_code) && isset($stepVal['variable_code']) && $input->variable_code === $stepVal['variable_code'])
+                                            ) {
+                                                $is_default = $stepVal['is_default'] ?? null;
+                                                $timestamp = $stepVal['timestamp'] ?? null;
+                                                break;
+                                            }
+                                        }
+                                    }
 
                                     return [
-                                        'id' => $input['id'] ?? null,
-                                        'variable_name' => $input['variable_name'] ?? null,
-                                        'variable_code' => $input['variable_code'] ?? null,
-                                        'order' => $input['order'] ?? null,
-                                        'type_data' => $input['type_data'] ?? null,
-                                        'value' => $input['value'] ?? null,
-                                        'is_default' => $input['is_default'] ?? null,
-                                        'timestamp' => $input['timestamp'] ?? null
+                                        'id' => $input->id ?? null,
+                                        'id_step_values' => $input->id ?? null,
+                                        'assessment_step_values_id' => $input->assessment_step_values_id ?? null,
+                                        'variable_name' => $input->variable_name ?? null,
+                                        'variable_code' => $input->variable_code ?? null,
+                                        'order' => $input->order ?? null,
+                                        'type_data' => $input->type_data ?? null,
+                                        'value' => $input->value ?? null,
+                                        'is_default' => $is_default,
+                                        'timestamp' => $timestamp ?? null
                                     ];
                                 })->toArray();
-                            } else {
-                                $step['step_values'] = [];
                             }
+
+                            // Assign langsung ke collection dengan key
+                            $formattedItem->steps[$key]['step_value_assessments'] = $stepValues;
                         }
                     }
                     $formattedCategory['items'][] = $formattedItem;
                 }
 
                 // Hanya tambahkan category jika memiliki items
+                // var_dump($formattedCategory['items']);
                 if (!empty($formattedCategory)) {
                     $formattedDetail['categories'][] = $formattedCategory;
                 }
@@ -447,7 +467,7 @@ class ValidationWoService
                     if (isset($categoryData['item']['criterias']) && is_array($categoryData['item']['criterias'])) {
                         foreach ($categoryData['item']['criterias'] as $stepData) {
                             $stepPayload = [
-                                'id' => $stepData['id'] ?? null,
+                                'id' => $stepData['id_step'] ?? null,
                                 'criteria_transaction_id' => $criteriaTransactionId,
                                 'order' => $stepData['order'] ?? 0,
                                 'step_code' => $stepData['step_code'] ?? null,
@@ -460,8 +480,8 @@ class ValidationWoService
                                 : ($stepModel->id ?? $stepPayload['id']);
 
                             $stepValuePayload = [
-                                'id' => $stepId,
-                                'assessment_step_values_id' => $stepId,
+                                'id' => $stepData['id_step_input'] ?? null,
+                                'assessment_step_values_id' => $stepData['id_step'] ?? $stepId ?? null,
                                 'variable_name' => $stepData['variable_name'] ?? null,
                                 'variable_code' => $stepData['variable_key'] ?? null,
                                 'order' => $stepData['order'] ?? 0,

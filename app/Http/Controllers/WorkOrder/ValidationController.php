@@ -65,6 +65,7 @@ class ValidationController extends BaseController
     {
         try {
             $data = $this->validationWoService->showWo($id);
+            // var_dump($data);
             // return $this->successResponse(new WoValidationResource($data), 'Berhasil mengambil detail validasi WO');
             return $this->successResponse($data, 'Berhasil mengambil detail validasi WO');
         } catch (\Throwable $th) {

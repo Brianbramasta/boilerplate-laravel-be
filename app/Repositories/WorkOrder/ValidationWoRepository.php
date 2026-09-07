@@ -197,6 +197,7 @@ class ValidationWoRepository implements ValidationWoInterface
                                             }
 
                                             $stepValue->is_default = $isDefault;
+                                            // $stepValue->id_step_values = '';
                                         }
                                     }
                                 });

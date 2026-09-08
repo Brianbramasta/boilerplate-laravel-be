@@ -3,6 +3,7 @@
 namespace App\Models\AssessmentPSB;
 
 use App\Models\Ref\AssessmentStatus;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
@@ -41,5 +42,10 @@ class AssessmentTransactionLog extends Model
     public function toStatus()
     {
         return $this->belongsTo(AssessmentStatus::class, 'to_status_id');
+    }
+
+    public function byUser()
+    {
+        return $this->belongsTo(User::class, 'changed_by');
     }
 }

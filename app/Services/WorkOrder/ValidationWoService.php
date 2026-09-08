@@ -2,6 +2,7 @@
 
 namespace App\Services\WorkOrder;
 
+use App\Events\WorkOrderUpdated;
 use App\Interface\WorkOrder\ValidationWoInterface;
 use App\Interface\WorkOrder\WoInterface;
 use Illuminate\Http\Request;
@@ -197,6 +198,8 @@ class ValidationWoService
             'distance_team' => $transaction->information->woPsbInformation->technician_distance,
             'dropcore' => $transaction->information->woPsbInformation->dropcore,
             'notes' => $transaction->notes ?? '',
+            'status_by' => $transaction->logsNewest->byUser->name ?? null,
+            'status_at' => $transaction->logsNewest->created_at ?? null,
             'assessments' => $detailFormated,
             // 'details' => $detailFormated,
         ];
@@ -255,6 +258,17 @@ class ValidationWoService
             ];
 
             $transaction = $this->woInterface->storeWo($transactionData, $id);
+
+            $logData = [
+                'assessment_transaction_id' => $transaction[0]['id'] ?? $transaction->id ?? null,
+                'from_status_id' => null,
+                'to_status_id' => $transactionData['status_id'] ?? null,
+                'changed_by' => 'APIKEY',
+                'changed_at' => now(),
+                'remark' => null,
+            ];
+
+            $this->validationWoInterface->upsertLogAssessmentTransactional($logData, null);
 
             // Ambil ID transaction yang baru dibuat atau diupdate
             $transactionId = $transaction[0]['id'] ?? $transaction->id ?? null;
@@ -365,6 +379,8 @@ class ValidationWoService
                 $steps[] = $step;
             }
 
+            $this->publishReverb($transaction->id, 'WAITING');
+
             return [
                 'success' => true,
                 'message' => 'Work Order berhasil ' . ($id ? 'diupdate' : 'disimpan'),
@@ -381,17 +397,42 @@ class ValidationWoService
         });
     }
 
+    private function publishReverb($id, $action)
+    {
+        $countWo = $this->validationWoInterface->countWoNotComplete();
+
+        broadcast(new WorkOrderUpdated(
+            $id,
+            $action,
+            $countWo
+        ));
+    }
+
+    public function getWoNotComplete()
+    {
+        return $this->validationWoInterface->countWoNotComplete();
+    }
+
     public function updateWo(array $data, ?string $id = null)
     {
 
-        // Gunakan eager loading dengan relasi yang sudah didefinisikan
+        // Ambil status_id dari transaction yang telah di-eager load
         $transaction = $this->validationWoInterface->showWoWithRelations($id);
 
-        if (!$transaction) {
+        if (empty($transaction) || (is_array($transaction) && empty($transaction[0]))) {
             throw new HttpException(400, 'Work Order tidak ditemukan atau tidak valid.');
         }
 
-        return DB::transaction(function () use ($data, $id) {
+        // Dapatkan status_id dari hasil transaction
+        if (is_array($transaction)) {
+            $statusId = $transaction[0]['status_id'] ?? null;
+        } elseif (is_object($transaction)) {
+            $statusId = $transaction->status_id ?? null;
+        } else {
+            $statusId = null;
+        }
+
+        return DB::transaction(function () use ($data, $id, $statusId) {
             // 1. Update main transaction
             $assessmentTransactionData = [
                 'id' => $id,
@@ -410,6 +451,17 @@ class ValidationWoService
             }
 
             $this->validationWoInterface->updateValidasiWo($assessmentTransactionData, $id);
+
+            $logData = [
+                'assessment_transaction_id' => $id,
+                'from_status_id' => $statusId,
+                'to_status_id' => $assessmentTransactionData['status_id'] ?? null,
+                'changed_by' => auth()->id(),
+                'changed_at' => now(),
+                'remark' => null,
+            ];
+
+            $this->validationWoInterface->upsertLogAssessmentTransactional($logData, null);
 
             foreach ($data['assessments'] as $assessmentData) {
                 // 1. Store assessment detail right away and get its ID
@@ -496,6 +548,47 @@ class ValidationWoService
 
             // 4. Return the updated Work Order
             return $this->validationWoInterface->showWoWithRelations($id);
+        });
+    }
+
+    public function updateStatusProgress(string $id, string $statusCode)
+    {
+        // Ambil status_id dari transaction yang telah di-eager load
+        $transaction = $this->validationWoInterface->showWoWithRelations($id);
+
+        if (empty($transaction) || (is_array($transaction) && empty($transaction[0]))) {
+            throw new HttpException(400, 'Work Order tidak ditemukan atau tidak valid.');
+        }
+
+        // Dapatkan status_id dari hasil transaction
+        if (is_array($transaction)) {
+            $statusId = $transaction[0]['status_id'] ?? null;
+        } elseif (is_object($transaction)) {
+            $statusId = $transaction->status_id ?? null;
+        } else {
+            $statusId = null;
+        }
+
+        $statusObj = $this->woInterface->checkStatusCode($statusCode);
+        if (!$statusObj || !isset($statusObj->id)) {
+            throw new HttpException(400, 'Status code tidak ditemukan atau tidak valid.');
+        }
+
+        return DB::transaction(function () use ($id, $statusId, $statusObj) {
+            $logData = [
+                'assessment_transaction_id' => $id,
+                'from_status_id' => $statusId,
+                'to_status_id' => $statusObj->id ?? null,
+                'changed_by' => auth()->id(),
+                'changed_at' => now(),
+                'remark' => null,
+            ];
+
+            $this->validationWoInterface->updateValidasiWo([
+                'status_id' => $logData['to_status_id'] ?? null,
+            ], $id);
+
+            $this->validationWoInterface->upsertLogAssessmentTransactional($logData, null);
         });
     }
 }

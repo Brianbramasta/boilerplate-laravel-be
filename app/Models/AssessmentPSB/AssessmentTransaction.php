@@ -63,6 +63,36 @@ class AssessmentTransaction extends Model
         return $this->hasMany(AssessmentTransactionDetail::class, 'assessment_transaction_id');
     }
 
+    // Relasi untuk mendapatkan average sebagai satu record
+    public function scoreAverage()
+    {
+        return $this->hasOne(AssessmentTransactionDetail::class, 'assessment_transaction_id')
+            ->selectRaw('assessment_transaction_id, sum(total_score) as average')
+            ->groupBy('assessment_transaction_id');
+    }
+
+    // Accessor
+    public function getScoreAvgAttribute()
+    {
+        $average = $this->scoreAverage->average ?? 0;
+
+        $categoryCount = $this->details
+            ->flatMap(fn($detail) => $detail->detailCriteria)
+            ->map(fn($criteria) => [
+                'assessment_detail_id' => $criteria->assessment_detail_id,
+                'category_id' => $criteria->category_id,
+            ])
+            ->unique(
+                fn($item) =>
+                $item['assessment_detail_id'] . '-' . $item['category_id']
+            )
+            ->count();
+
+        return $categoryCount > 0
+            ? $average / $categoryCount
+            : 0;
+    }
+
     public function information()
     {
         return $this->hasOne(AssessmentInformation::class, 'assessment_transaction_id');
@@ -71,5 +101,11 @@ class AssessmentTransaction extends Model
     public function logs()
     {
         return $this->hasMany(AssessmentTransactionLog::class, 'assessment_transaction_id');
+    }
+
+    public function logsNewest()
+    {
+        return $this->hasOne(AssessmentTransactionLog::class, 'assessment_transaction_id')
+            ->latest();
     }
 }

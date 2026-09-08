@@ -6,7 +6,8 @@ use App\Http\Controllers\BaseController;
 use App\Http\Requests\WorkOrder\IndexWorkOrderRequest;
 use App\Http\Requests\WorkOrder\StoreValidationWorkOrderRequest;
 use App\Http\Requests\WorkOrder\StoreWorkOrderRequest;
-use App\Http\Resources\WorkOrder\WoValidationResource;
+use App\Http\Requests\WorkOrder\UpdateStatusValidationWorkOrderRequest;
+use App\Http\Resources\WorkOrder\ListWoValidationResource;
 use App\Services\WorkOrder\ValidationWoService;
 
 class ValidationController extends BaseController
@@ -17,7 +18,8 @@ class ValidationController extends BaseController
     {
         try {
             $data = $this->validationWoService->index($request->all());
-            return $this->successResponse($data, 'Berhasil mengambil data validasi WO');
+            // return $this->successResponse($data, 'Berhasil mengambil data validasi WO');
+            return $this->successResponse(new ListWoValidationResource($data), 'Berhasil mengambil data validasi WO');
         } catch (\Throwable $th) {
             return api()->handle($th);
         }
@@ -88,6 +90,27 @@ class ValidationController extends BaseController
         try {
             $data = $this->validationWoService->updateWo($request->all(), $id);
             return $this->successResponse($data, 'Berhasil menyimpan data validasi WO');
+        } catch (\Throwable $th) {
+            return api()->handle($th);
+        }
+    }
+
+    public function updateOnProgress(UpdateStatusValidationWorkOrderRequest $request, string $id)
+    {
+        try {
+            $param = $request->all();
+            $data = $this->validationWoService->updateStatusProgress($id, $param['status']);
+            return $this->successResponse($data, 'Berhasil update status progress validasi WO');
+        } catch (\Throwable $th) {
+            return api()->handle($th);
+        }
+    }
+
+    public function getWoNotComplete()
+    {
+        try {
+            $data = $this->validationWoService->getWoNotComplete();
+            return $this->successResponse($data, 'Berhasil update status progress validasi WO');
         } catch (\Throwable $th) {
             return api()->handle($th);
         }

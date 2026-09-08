@@ -8,6 +8,7 @@ use App\Models\AssessmentPSB\AssessmentTransaction;
 use App\Models\AssessmentPSB\AssessmentTransactionDetail;
 use App\Models\AssessmentPSB\AssessmentTransactionDetailCriteria;
 use App\Models\AssessmentPSB\AssessmentTransactionDetailRule;
+use App\Models\AssessmentPSB\AssessmentTransactionLog;
 use App\Models\AssessmentPSB\AssessmentTransactionStepValue;
 use App\Models\AssessmentPSB\StepInputValue;
 use App\Models\Master\Assessment;
@@ -41,6 +42,12 @@ class ValidationWoRepository implements ValidationWoInterface
             ->addSelect("pic.full_name as katim")
             ->addSelect('rs.code as status')
             ->addSelect('rs.name as status_name');
+
+        $query->with([
+            'logsNewest',
+            'scoreAverage',
+            'logsNewest.byUser',
+        ]);
 
         // Kolom yang bisa dicari (searchable)
         $searchableColumns = [
@@ -281,6 +288,7 @@ class ValidationWoRepository implements ValidationWoInterface
                 'information.picInformations',
                 'information.woPsbInformation',
                 'information.stepValues',
+                'logsNewest.byUser',
             ])
 
             ->first();
@@ -416,5 +424,21 @@ class ValidationWoRepository implements ValidationWoInterface
             ['id' => $id],
             $data,
         );
+    }
+
+    public function upsertLogAssessmentTransactional(array $data, ?string $id)
+    {
+        return AssessmentTransactionLog::updateOrCreate(
+            ['id' => $id],
+            $data,
+        );
+    }
+
+    public function countWoNotComplete()
+    {
+        // Menghitung AssessmentTransaction yang status-nya tidak COMPLETE dengan join pada tabel status
+        return AssessmentTransaction::join('ref_assessment_statuses as status', 'tr_assessments.status_id', '=', 'status.id')
+            ->where('status.code', '!=', 'COMPLETE')
+            ->count();
     }
 }

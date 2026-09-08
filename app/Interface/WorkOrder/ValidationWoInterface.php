@@ -25,4 +25,7 @@ interface ValidationWoInterface
 
     public function showAssessmentCriteriaStepValueWo(string $id);
     public function upsertAssessmentCriteriaStepValueWo(array $data, ?string $id);
+    public function upsertLogAssessmentTransactional(array $data, ?string $id);
+
+    public function countWoNotComplete();
 }

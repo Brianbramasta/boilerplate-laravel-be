@@ -7,7 +7,9 @@ use App\Interface\Auth\AuthInterface;
 use App\Interface\Master\Account\MasterAccountInterface;
 use App\Interface\Master\PsbAssessment\PsbAssessmentInterface;
 use App\Interface\Master\PsbVariable\PsbWoStepInterface;
+use App\Interface\WorkOrder\DashboardInterface;
 use App\Repositories\Auth\AuthRepository;
+use App\Repositories\Dashboard\DashboardRepository;
 use App\Repositories\Master\Account\MasterAccountRepository;
 use App\Repositories\Master\PsbAssessment\PsbAssessmentRepository;
 use App\Repositories\Master\PsbVariable\PsbIntegratedRepository;
@@ -43,6 +45,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(
             PsbAssessmentInterface::class,
             PsbAssessmentRepository::class,
+        );
+        $this->app->bind(
+            DashboardInterface::class,
+            DashboardRepository::class,
         );
     }
 

@@ -546,6 +546,8 @@ class ValidationWoService
                 }
             }
 
+            $this->publishReverb($id, $data['status']);
+
             // 4. Return the updated Work Order
             return $this->validationWoInterface->showWoWithRelations($id);
         });
@@ -574,7 +576,7 @@ class ValidationWoService
             throw new HttpException(400, 'Status code tidak ditemukan atau tidak valid.');
         }
 
-        return DB::transaction(function () use ($id, $statusId, $statusObj) {
+        return DB::transaction(function () use ($id, $statusId, $statusObj, $statusCode) {
             $logData = [
                 'assessment_transaction_id' => $id,
                 'from_status_id' => $statusId,
@@ -587,6 +589,8 @@ class ValidationWoService
             $this->validationWoInterface->updateValidasiWo([
                 'status_id' => $logData['to_status_id'] ?? null,
             ], $id);
+
+            $this->publishReverb($id, $statusCode);
 
             $this->validationWoInterface->upsertLogAssessmentTransactional($logData, null);
         });

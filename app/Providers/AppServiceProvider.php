@@ -7,6 +7,8 @@ use App\Interface\Auth\AuthInterface;
 use App\Interface\Master\Account\MasterAccountInterface;
 use App\Interface\Master\PsbAssessment\PsbAssessmentInterface;
 use App\Interface\Master\PsbVariable\PsbWoStepInterface;
+use App\Interface\WorkOrder\ValidationWoInterface;
+use App\Interface\WorkOrder\WoInterface;
 use App\Interface\WorkOrder\DashboardInterface;
 use App\Repositories\Auth\AuthRepository;
 use App\Repositories\Dashboard\DashboardRepository;
@@ -14,6 +16,8 @@ use App\Repositories\Master\Account\MasterAccountRepository;
 use App\Repositories\Master\PsbAssessment\PsbAssessmentRepository;
 use App\Repositories\Master\PsbVariable\PsbIntegratedRepository;
 use App\Repositories\Master\PsbVariable\PsbJsonRepository;
+use App\Repositories\WorkOrder\ValidationWoRepository;
+use App\Repositories\WorkOrder\WoRepository;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -45,6 +49,14 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(
             PsbAssessmentInterface::class,
             PsbAssessmentRepository::class,
+        );
+        $this->app->bind(
+            ValidationWoInterface::class,
+            ValidationWoRepository::class,
+        );
+        $this->app->bind(
+            WoInterface::class,
+            WoRepository::class,
         );
         $this->app->bind(
             DashboardInterface::class,

@@ -25,6 +25,7 @@ class ValidationWoService
 
     public function index(array $data = [])
     {
+        $this->revertInProgressStatusesIfExpired();
         return $this->validationWoInterface->index($data);
     }
 
@@ -39,7 +40,10 @@ class ValidationWoService
 
     public function showWo(string $id)
     {
+
         $transaction = $this->validationWoInterface->showWoWithRelations($id);
+
+        $this->revertInProgressStatusesIfExpired();
 
         if (!$transaction) {
             throw new HttpException(400, 'Work Order tidak ditemukan atau tidak valid.');
@@ -65,113 +69,114 @@ class ValidationWoService
 
         $detailFormatted = [];
 
-        foreach ($assessments as $assessment) {
-            $assessmentId = $assessment['assessment']['id'];
-            $matchingDetail = $detailsByAssessment->get($assessmentId);
+        if ($details->isEmpty()) {
+            // Collection kosong
+            $detailFormatted = $assessments;
+        } else {
+            foreach ($assessments as $assessment) {
+                $assessmentId = $assessment['assessment']['id'];
+                $matchingDetail = $detailsByAssessment->get($assessmentId);
 
-            if (!$matchingDetail) {
-                continue;
-            }
+                if (!$matchingDetail) {
+                    continue;
+                }
 
-            $criteriaMap = $criteriaMapByDetail[$matchingDetail->id] ?? collect();
+                $criteriaMap = $criteriaMapByDetail[$matchingDetail->id] ?? collect();
 
-            $formattedDetail = [
-                'assessment' => $assessment['assessment'],
-                'detail_id' => $matchingDetail->id,
-                'total_score' => $matchingDetail->total_score ?? 0,
-                'categories' => [],
-            ];
-
-            foreach ($assessment['categories'] as $categoryData) {
-                $formattedCategory = [
-                    'category' => $categoryData['category'],
-                    'total_weight_active' => $categoryData['total_weight_active'] ?? null,
-                    'items' => [],
+                $formattedDetail = [
+                    'assessment' => $assessment['assessment'],
+                    'detail_id' => $matchingDetail->id,
+                    'total_score' => $matchingDetail->total_score ?? 0,
+                    'categories' => [],
                 ];
 
-                foreach ($categoryData['items'] as $item) {
-                    $criteriaId = $item['id'];
-                    $detailCriteria = $criteriaMap->get($criteriaId);
+                foreach ($assessment['categories'] as $categoryData) {
+                    $formattedCategory = [
+                        'category' => $categoryData['category'],
+                        'total_weight_active' => $categoryData['total_weight_active'] ?? null,
+                        'items' => [],
+                    ];
 
-                    if (!$detailCriteria) {
-                        continue;
-                    }
+                    foreach ($categoryData['items'] as $item) {
+                        $criteriaId = $item['id'];
+                        $detailCriteria = $criteriaMap->get($criteriaId);
 
-                    $formattedItem = $item;
-                    $formattedItem['detail_criteria_id'] = $detailCriteria->id ?? null;
-                    $formattedItem['obtained_score'] = $detailCriteria->obtained_score ?? 0;
-                    $formattedItem['calculated_value'] = $detailCriteria->calculated_value ?? null;
-                    $formattedItem['description'] = $detailCriteria->description ?? null;
-
-                    // Rules
-                    if (isset($formattedItem['rules'])) {
-                        $ruleMap = $rulesMapByCriteria[$detailCriteria->id] ?? collect();
-                        foreach ($formattedItem['rules'] as &$rule) {
-                            $matchingRule = $ruleMap->get($rule['id']);
-                            $rule['actual_value'] = $matchingRule->actual_value ?? null;
-                            $rule['is_pass'] = $matchingRule->is_pass ?? null;
-                            $rule['detail_rule_id'] = $matchingRule->id ?? null;
+                        if (!$detailCriteria) {
+                            continue;
                         }
-                        unset($rule);
-                    }
 
-                    // Steps
-                    if (isset($formattedItem->steps)) {
-                        $stepMap = $stepsMapByCriteria[$detailCriteria->id] ?? collect();
+                        $formattedItem = $item;
+                        $formattedItem['detail_criteria_id'] = $detailCriteria->id ?? null;
+                        $formattedItem['obtained_score'] = $detailCriteria->obtained_score ?? 0;
+                        $formattedItem['calculated_value'] = $detailCriteria->calculated_value ?? null;
+                        $formattedItem['description'] = $detailCriteria->description ?? null;
 
-                        foreach ($formattedItem->steps as $key => $step) {
-                            $matchingStep = $stepMap->get($step['step_code']);
+                        // Rules
+                        if (isset($formattedItem['rules'])) {
+                            $ruleMap = $rulesMapByCriteria[$detailCriteria->id] ?? collect();
+                            foreach ($formattedItem['rules'] as &$rule) {
+                                $matchingRule = $ruleMap->get($rule['id']);
+                                $rule['actual_value'] = $matchingRule->actual_value ?? null;
+                                $rule['is_pass'] = $matchingRule->is_pass ?? null;
+                                $rule['detail_rule_id'] = $matchingRule->id ?? null;
+                            }
+                            unset($rule);
+                        }
 
-                            $stepValues = [];
-                            if ($matchingStep && isset($matchingStep->inputValues)) {
-                                $stepDefaultMap = [];
-                                if (isset($step->stepValues)) {
-                                    foreach ($step->stepValues as $stepVal) {
-                                        if (isset($stepVal['variable_code'])) {
-                                            $stepDefaultMap[$stepVal['variable_code']] = [
-                                                'is_default' => $stepVal['is_default'] ?? null,
-                                                'timestamp' => $stepVal['timestamp'] ?? null,
-                                            ];
+                        // Steps
+                        if (isset($formattedItem->steps)) {
+                            $stepMap = $stepsMapByCriteria[$detailCriteria->id] ?? collect();
+
+                            foreach ($formattedItem->steps as $key => $step) {
+                                $matchingStep = $stepMap->get($step['step_code']);
+
+                                $stepValues = [];
+                                if ($matchingStep && isset($matchingStep->inputValues)) {
+                                    $stepDefaultMap = [];
+                                    if (isset($step->stepValues)) {
+                                        foreach ($step->stepValues as $stepVal) {
+                                            if (isset($stepVal['variable_code'])) {
+                                                $stepDefaultMap[$stepVal['variable_code']] = [
+                                                    'is_default' => $stepVal['is_default'] ?? null,
+                                                    'timestamp' => $stepVal['timestamp'] ?? null,
+                                                ];
+                                            }
                                         }
                                     }
+
+                                    $stepValues = $matchingStep->inputValues->map(function ($input) use ($stepDefaultMap) {
+                                        $defaultInfo = $stepDefaultMap[$input->variable_code] ?? [];
+                                        return [
+                                            'id' => $input->id ?? null,
+                                            'id_step_values' => $input->id ?? null,
+                                            'assessment_step_values_id' => $input->assessment_step_values_id ?? null,
+                                            'variable_name' => $input->variable_name ?? null,
+                                            'variable_code' => $input->variable_code ?? null,
+                                            'order' => $input->order ?? null,
+                                            'type_data' => $input->type_data ?? null,
+                                            'value' => $input->value ?? null,
+                                            'is_default' => $defaultInfo['is_default'] ?? null,
+                                            'timestamp' => $defaultInfo['timestamp'] ?? null,
+                                        ];
+                                    })->toArray();
                                 }
 
-                                $stepValues = $matchingStep->inputValues->map(function ($input) use ($stepDefaultMap) {
-                                    $defaultInfo = $stepDefaultMap[$input->variable_code] ?? [];
-                                    return [
-                                        'id' => $input->id ?? null,
-                                        'id_step_values' => $input->id ?? null,
-                                        'assessment_step_values_id' => $input->assessment_step_values_id ?? null,
-                                        'variable_name' => $input->variable_name ?? null,
-                                        'variable_code' => $input->variable_code ?? null,
-                                        'order' => $input->order ?? null,
-                                        'type_data' => $input->type_data ?? null,
-                                        'value' => $input->value ?? null,
-                                        'is_default' => $defaultInfo['is_default'] ?? null,
-                                        'timestamp' => $defaultInfo['timestamp'] ?? null,
-                                    ];
-                                })->toArray();
+                                $formattedItem->steps[$key]['step_value_assessments'] = $stepValues;
                             }
-
-                            $formattedItem->steps[$key]['step_value_assessments'] = $stepValues;
                         }
+
+                        $formattedCategory['items'][] = $formattedItem;
                     }
 
-                    $formattedCategory['items'][] = $formattedItem;
+                    if (!empty($formattedCategory)) {
+                        $formattedDetail['categories'][] = $formattedCategory;
+                    }
                 }
 
-                if (!empty($formattedCategory)) {
-                    $formattedDetail['categories'][] = $formattedCategory;
+                if (!empty($formattedDetail)) {
+                    $detailFormatted[] = $formattedDetail;
                 }
             }
-
-            if (!empty($formattedDetail)) {
-                $detailFormatted[] = $formattedDetail;
-            }
-        }
-
-        if ($transaction->status->code === 'IN_PROGRESS') {
-            $detailFormatted = $assessments;
         }
 
         return [
@@ -192,6 +197,7 @@ class ValidationWoService
             'notes' => $transaction->notes ?? '',
             'status_by' => $transaction->logsNewest->byUser->name ?? null,
             'status_at' => $transaction->logsNewest->created_at ?? null,
+            'newest' => $details->isEmpty(),
             'assessments' => $detailFormatted,
         ];
     }
@@ -736,5 +742,63 @@ class ValidationWoService
 
             $this->validationWoInterface->upsertLogAssessmentTransactional($logData, null);
         });
+    }
+
+    /**
+     * Revert status IN_PROGRESS yang sudah melebihi 15 menit (expired).
+     *
+     * @return int Jumlah assessment yang direvert
+     */
+    private function revertInProgressStatusesIfExpired(): int
+    {
+        // Waktu acuan eksplisit WIB, konsisten dengan query
+        $nowWib = now('Asia/Jakarta');
+
+        // 1 query ambil semua log expired (threshold & timezone sudah di-handle di sana)
+        $expiredLogs = $this->validationWoInterface->getExpiredInProgressLogs();
+
+        if ($expiredLogs->isEmpty()) {
+            return 0;
+        }
+
+        // Siapkan data untuk batch update & batch insert
+        $statusMapping = [];
+        $logsToInsert  = [];
+
+        foreach ($expiredLogs as $log) {
+            $assessmentId = $log->assessment_transaction_id;
+
+            $logCreatedAtWib = \Carbon\Carbon::parse($log->created_at)->timezone('Asia/Jakarta');
+            $diffMinutes = $logCreatedAtWib->diffInMinutes($nowWib, false);
+
+            // echo "log->created_at (WIB): {$logCreatedAtWib}, nowWib: {$nowWib}, selisih menit: {$diffMinutes}\n";
+
+            if ($diffMinutes >= 10) {
+                // Mapping untuk update tr_assessments
+                $statusMapping[$assessmentId] = $log->from_status_id;
+
+                // Siapkan log revert
+                $logsToInsert[] = [
+                    'id'                        => Str::uuid()->toString(),
+                    'assessment_transaction_id' => $assessmentId,
+                    'from_status_id'            => $log->to_status_id,
+                    'to_status_id'              => $log->from_status_id,
+                    'changed_by'                => $log->changed_by,
+                    'changed_at'                => $nowWib,
+                    'remark'                    => 'Status direvert otomatis karena IN_PROGRESS lebih dari 15 menit',
+                    'created_at'                => $nowWib,
+                    'updated_at'                => $nowWib,
+                ];
+                // Your logic here (if needed)
+            }
+        }
+
+        // 2. Jalankan dalam transaction
+        DB::transaction(function () use ($statusMapping, $logsToInsert) {
+            $this->validationWoInterface->batchUpdateAssessmentStatuses($statusMapping);
+            $this->validationWoInterface->batchInsertLogs($logsToInsert);
+        });
+
+        return count($statusMapping);
     }
 }

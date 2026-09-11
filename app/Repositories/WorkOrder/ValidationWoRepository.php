@@ -18,15 +18,14 @@ use App\Models\Master\AssessmentCriteria;
 use App\Models\Ref\AssessmentResult;
 use App\Models\Ref\AssessmentStatus;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class ValidationWoRepository implements ValidationWoInterface
 {
     protected string $path = 'psb-wo-steps.json';
 
-    public function __construct()
-    {
-    }
+    public function __construct() {}
 
     /* =========================================================
      *  INDEX
@@ -349,5 +348,85 @@ class ValidationWoRepository implements ValidationWoInterface
     public function forgetWoNotCompleteCache(): void
     {
         Cache::forget('wo_not_complete_count');
+    }
+
+    public function getExpiredInProgressLogs()
+    {
+        // Ambil satu assessment IN_PROGRESS terbaru
+        $latestAssessment = DB::table('tr_assessments as tr')
+            ->join('ref_assessment_statuses as curr_status', 'tr.status_id', '=', 'curr_status.id')
+            ->where('curr_status.code', 'IN_PROGRESS')
+            ->whereNotNull('tr.created_at')
+            ->orderByDesc('tr.created_at')
+            ->first(['tr.id']);
+
+        if (!$latestAssessment) {
+            return collect([]);
+        }
+
+        // Ambil log IN_PROGRESS terbaru untuk assessment tersebut (tanpa filter waktu)
+        $latestLog = AssessmentTransactionLog::query()
+            ->join('ref_assessment_statuses as tos', 'log_assessment_transactionals.to_status_id', '=', 'tos.id')
+            ->where('tos.code', 'IN_PROGRESS')
+            ->where('log_assessment_transactionals.assessment_transaction_id', $latestAssessment->id)
+            ->orderByDesc('log_assessment_transactionals.id')
+            ->first([
+                'log_assessment_transactionals.id',
+                'log_assessment_transactionals.assessment_transaction_id',
+                'log_assessment_transactionals.from_status_id',
+                'log_assessment_transactionals.to_status_id',
+                'log_assessment_transactionals.changed_by',
+                'log_assessment_transactionals.created_at',
+            ]);
+
+        return $latestLog ? collect([$latestLog]) : collect([]);
+    }
+
+    /**
+     * Batch update status tr_assessments berdasarkan mapping id => status_id.
+     *
+     * @param array $mapping [assessment_transaction_id => from_status_id]
+     * @return int
+     */
+    public function batchUpdateAssessmentStatuses(array $mapping): int
+    {
+        if (empty($mapping)) {
+            return 0;
+        }
+
+        // Group by status_id agar bisa batch update per status
+        $grouped = [];
+        foreach ($mapping as $assessmentId => $statusId) {
+            $grouped[$statusId][] = $assessmentId;
+        }
+
+        $totalUpdated = 0;
+
+        foreach ($grouped as $statusId => $assessmentIds) {
+            $totalUpdated += AssessmentTransaction::whereIn('id', $assessmentIds)
+                ->update(['status_id' => $statusId]);
+        }
+
+        return $totalUpdated;
+    }
+
+    /**
+     * Batch insert log revert.
+     *
+     * @param array $logs
+     * @return bool
+     */
+    public function batchInsertLogs(array $logs): bool
+    {
+        if (empty($logs)) {
+            return true;
+        }
+
+        // Chunk agar tidak terlalu besar
+        foreach (array_chunk($logs, 500) as $chunk) {
+            AssessmentTransactionLog::insert($chunk);
+        }
+
+        return true;
     }
 }

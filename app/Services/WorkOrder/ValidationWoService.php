@@ -7,6 +7,7 @@ use App\Interface\WorkOrder\ValidationWoInterface;
 use App\Interface\WorkOrder\WoInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class ValidationWoService
@@ -32,115 +33,111 @@ class ValidationWoService
         return $this->validationWoInterface->showStatuses();
     }
 
+    /* =========================================================
+     *  SHOW WO + FORMAT RESPONSE (logika bisnis di service)
+     * ========================================================= */
+
     public function showWo(string $id)
     {
-        // Gunakan eager loading dengan relasi yang sudah didefinisikan
         $transaction = $this->validationWoInterface->showWoWithRelations($id);
 
         if (!$transaction) {
             throw new HttpException(400, 'Work Order tidak ditemukan atau tidak valid.');
         }
 
-
-        $variables = $this->validationWoInterface->showMasterVariables($transaction->information->id);
-        $assessments = $variables;
+        $assessments = $this->buildMasterVariables($transaction->information->id);
         $details = $transaction->details;
-        // Format details berdasarkan urutan assessments
 
-        $detailFormated = [];
+        // ✅ Build lookup maps sekali (O(n))
+        $detailsByAssessment = $details->keyBy('assessment_id');
+        $criteriaMapByDetail = [];
+        $rulesMapByCriteria = [];
+        $stepsMapByCriteria = [];
+
+        foreach ($details as $detail) {
+            $criteriaMapByDetail[$detail->id] = collect($detail->detailCriteria ?? [])->keyBy('criteria_id');
+
+            foreach ($detail->detailCriteria as $criteria) {
+                $rulesMapByCriteria[$criteria->id] = collect($criteria->detailRules ?? [])->keyBy('rule_id');
+                $stepsMapByCriteria[$criteria->id] = collect($criteria->stepValues ?? [])->keyBy('step_code');
+            }
+        }
+
+        $detailFormatted = [];
 
         foreach ($assessments as $assessment) {
-            // Cari detail yang sesuai dengan assessment ini
-            $matchingDetail = collect($details)->firstWhere('assessment_id', $assessment['assessment']['id']);
+            $assessmentId = $assessment['assessment']['id'];
+            $matchingDetail = $detailsByAssessment->get($assessmentId);
 
             if (!$matchingDetail) {
-                // Jika tidak ada detail, skip assessment ini
                 continue;
             }
-            // var_dump('masuk', $assessment['assessment']['id']);
 
-            // Format ulang structure
+            $criteriaMap = $criteriaMapByDetail[$matchingDetail->id] ?? collect();
+
             $formattedDetail = [
                 'assessment' => $assessment['assessment'],
                 'detail_id' => $matchingDetail->id,
                 'total_score' => $matchingDetail->total_score ?? 0,
-                'categories' => []
+                'categories' => [],
             ];
 
-            // Mapping categories dan items dari assessments ke details
             foreach ($assessment['categories'] as $categoryData) {
-                $categoryId = $categoryData['category']['id'];
-
                 $formattedCategory = [
                     'category' => $categoryData['category'],
                     'total_weight_active' => $categoryData['total_weight_active'] ?? null,
-                    'items' => []
+                    'items' => [],
                 ];
 
-                // Untuk setiap item di category, cari detail criteria yang sesuai
                 foreach ($categoryData['items'] as $item) {
                     $criteriaId = $item['id'];
-
-                    $detailCriteria = collect($matchingDetail->detailCriteria ?? [])
-                        ->firstWhere('criteria_id', $criteriaId);
+                    $detailCriteria = $criteriaMap->get($criteriaId);
 
                     if (!$detailCriteria) {
                         continue;
                     }
 
-                    // Format item dengan data dari detail
                     $formattedItem = $item;
                     $formattedItem['detail_criteria_id'] = $detailCriteria->id ?? null;
                     $formattedItem['obtained_score'] = $detailCriteria->obtained_score ?? 0;
                     $formattedItem['calculated_value'] = $detailCriteria->calculated_value ?? null;
                     $formattedItem['description'] = $detailCriteria->description ?? null;
-                    // var_dump('tes', $formattedItem['detail_criteria_id'], $formattedItem['description']);
 
-                    // Update rules dengan actual_value dan is_pass dari detail
-                    if (isset($formattedItem['rules']) && $detailCriteria) {
+                    // Rules
+                    if (isset($formattedItem['rules'])) {
+                        $ruleMap = $rulesMapByCriteria[$detailCriteria->id] ?? collect();
                         foreach ($formattedItem['rules'] as &$rule) {
-                            $matchingRule = collect($detailCriteria->detailRules ?? [])
-                                ->firstWhere('rule_id', $rule['id']);
-                            if ($matchingRule) {
-                                // var_dump('masuk',$matchingRule->id);
-                                $rule['actual_value'] = $matchingRule->actual_value;
-                                $rule['is_pass'] = $matchingRule->is_pass;
-                                $rule['detail_rule_id'] = $matchingRule->id;
-                            } else {
-                                // Jika tidak ada detail rule, set null
-                                $rule['actual_value'] = null;
-                                $rule['is_pass'] = null;
-                                $rule['detail_rule_id'] = null;
-                            }
+                            $matchingRule = $ruleMap->get($rule['id']);
+                            $rule['actual_value'] = $matchingRule->actual_value ?? null;
+                            $rule['is_pass'] = $matchingRule->is_pass ?? null;
+                            $rule['detail_rule_id'] = $matchingRule->id ?? null;
                         }
+                        unset($rule);
                     }
 
-                    // Karena formattedItem adalah object, akses sebagai object
-                    if (isset($formattedItem->steps) && $detailCriteria) {
-                        // Iterasi dengan key agar bisa dimodifikasi
+                    // Steps
+                    if (isset($formattedItem->steps)) {
+                        $stepMap = $stepsMapByCriteria[$detailCriteria->id] ?? collect();
+
                         foreach ($formattedItem->steps as $key => $step) {
-                            $matchingStep = $detailCriteria->stepValues->firstWhere('step_code', $step['step_code']);
+                            $matchingStep = $stepMap->get($step['step_code']);
 
                             $stepValues = [];
                             if ($matchingStep && isset($matchingStep->inputValues)) {
-                                $stepValues = $matchingStep->inputValues->map(function ($input) use ($step) {
-                                    // Cari default value dari step (bukan dari matching input)
-                                    $is_default = null;
-                                    $timestamp = null;
-                                    if (isset($step->stepValues)) {
-                                        // Cari key step_values yang variable_code/value_code/value_name sama dengan input
-                                        foreach ($step->stepValues as $stepVal) {
-                                            // Cocokkan variable_code pada step_values dan input
-                                            if (
-                                                (isset($input->variable_code) && isset($stepVal['variable_code']) && $input->variable_code === $stepVal['variable_code'])
-                                            ) {
-                                                $is_default = $stepVal['is_default'] ?? null;
-                                                $timestamp = $stepVal['timestamp'] ?? null;
-                                                break;
-                                            }
+                                $stepDefaultMap = [];
+                                if (isset($step->stepValues)) {
+                                    foreach ($step->stepValues as $stepVal) {
+                                        if (isset($stepVal['variable_code'])) {
+                                            $stepDefaultMap[$stepVal['variable_code']] = [
+                                                'is_default' => $stepVal['is_default'] ?? null,
+                                                'timestamp' => $stepVal['timestamp'] ?? null,
+                                            ];
                                         }
                                     }
+                                }
 
+                                $stepValues = $matchingStep->inputValues->map(function ($input) use ($stepDefaultMap) {
+                                    $defaultInfo = $stepDefaultMap[$input->variable_code] ?? [];
                                     return [
                                         'id' => $input->id ?? null,
                                         'id_step_values' => $input->id ?? null,
@@ -150,62 +147,167 @@ class ValidationWoService
                                         'order' => $input->order ?? null,
                                         'type_data' => $input->type_data ?? null,
                                         'value' => $input->value ?? null,
-                                        'is_default' => $is_default,
-                                        'timestamp' => $timestamp ?? null
+                                        'is_default' => $defaultInfo['is_default'] ?? null,
+                                        'timestamp' => $defaultInfo['timestamp'] ?? null,
                                     ];
                                 })->toArray();
                             }
 
-                            // Assign langsung ke collection dengan key
                             $formattedItem->steps[$key]['step_value_assessments'] = $stepValues;
                         }
                     }
+
                     $formattedCategory['items'][] = $formattedItem;
                 }
 
-                // Hanya tambahkan category jika memiliki items
-                // var_dump($formattedCategory['items']);
                 if (!empty($formattedCategory)) {
                     $formattedDetail['categories'][] = $formattedCategory;
                 }
             }
 
-            // Hanya tambahkan detail jika memiliki categories
             if (!empty($formattedDetail)) {
-                $detailFormated[] = $formattedDetail;
+                $detailFormatted[] = $formattedDetail;
             }
         }
 
-        if ($transaction->status->code === 'WAITING') {
-            # code...
-            $detailFormated = $variables;
+        if ($transaction->status->code === 'IN_PROGRESS') {
+            $detailFormatted = $assessments;
         }
 
-        // Build response sesuai struktur request
-        $response = [
+        return [
             'status' => $transaction->status->code,
             'no_wo' => $transaction->information->no_wo,
             'customer_name' => $transaction->information->customer_name,
             'branch_name' => $transaction->information->branch_name,
             'pppoe' => $transaction->pppoe_secret,
-            'katim' => $transaction->information->picInformations[0]->full_name,
-            'team' => $transaction->information->woPsbInformation->team_name,
-            'access_erp' => $transaction->information->technicalInformation->splitter,
+            'katim' => $transaction->information->picInformations[0]->full_name ?? null,
+            'team' => $transaction->information->woPsbInformation->team_name ?? null,
+            'access_erp' => $transaction->information->technicalInformation->splitter ?? null,
             'start' => $transaction->information->start_work_order,
             'end' => $transaction->information->end_work_order,
             'duration' => $transaction->information->duration_minute,
-            'distance_sales' => $transaction->information->woPsbInformation->sales_distance,
-            'distance_team' => $transaction->information->woPsbInformation->technician_distance,
-            'dropcore' => $transaction->information->woPsbInformation->dropcore,
+            'distance_sales' => $transaction->information->woPsbInformation->sales_distance ?? null,
+            'distance_team' => $transaction->information->woPsbInformation->technician_distance ?? null,
+            'dropcore' => $transaction->information->woPsbInformation->dropcore ?? null,
             'notes' => $transaction->notes ?? '',
             'status_by' => $transaction->logsNewest->byUser->name ?? null,
             'status_at' => $transaction->logsNewest->created_at ?? null,
-            'assessments' => $detailFormated,
-            // 'details' => $detailFormated,
+            'assessments' => $detailFormatted,
         ];
-
-        return $response;
     }
+
+    /**
+     * ✅ Semua logika build master variables ada di service.
+     */
+    private function buildMasterVariables(string $assessmentInformationId): \Illuminate\Support\Collection
+    {
+        $variable = collect($this->validationWoInterface->getMasterVariablesJson());
+
+        $stepValues = $this->validationWoInterface->getStepValuesKeyedByStepId($assessmentInformationId);
+        $stepValueIds = $stepValues->pluck('id')->all();
+        $dataValueMap = $this->validationWoInterface->getStepDataValuesMap($stepValueIds);
+
+        $criteriaByAssessment = $this->validationWoInterface->getCriteriaGroupedByAssessment();
+        $activeAssessments = $this->validationWoInterface->getActiveAssessmentsWithCriteria();
+
+        return $activeAssessments
+            ->map(function ($assessment) use ($criteriaByAssessment, $variable, $stepValues, $dataValueMap) {
+                $assessmentItems = $criteriaByAssessment->get($assessment->id, collect());
+
+                $categories = $assessmentItems
+                    ->groupBy('assessment_category_id')
+                    ->map(function ($categoryItems) use ($variable, $stepValues, $dataValueMap) {
+                        $category = $categoryItems->first()->category;
+
+                        $items = $categoryItems->values()->map(function ($item) use ($variable, $stepValues, $dataValueMap) {
+                            if ($item->relationLoaded('steps')) {
+                                $item->steps->each(function ($step) use ($variable, $stepValues, $dataValueMap) {
+                                    $matchingVariable = $variable->first(
+                                        fn($v) => (int) ($v->id) === (int) ($step->step_id)
+                                    );
+
+                                    $stepValueModel = $stepValues->get($step->step_id);
+                                    $stepValueId = $stepValueModel->id ?? null;
+
+                                    $stepDefaultValues = [];
+                                    $defaultComponent = $matchingVariable->default_component ?? [];
+
+                                    foreach ($defaultComponent as $componentItem) {
+                                        $itemWithValue = (array) $componentItem;
+                                        $code = $itemWithValue['key'] ?? null;
+
+                                        if ($stepValueId) {
+                                            $itemWithValue['value'] = $dataValueMap[$stepValueId][$code] ?? null;
+                                            $itemWithValue['timestamp'] = $dataValueMap[$stepValueId]['timestamp']
+                                                ?? $stepValueModel->updated_at;
+                                        } else {
+                                            $itemWithValue['value'] = null;
+                                        }
+
+                                        $stepDefaultValues[] = (object) $itemWithValue;
+                                    }
+                                    $step->step_default_values = $stepDefaultValues;
+
+                                    if ($step->relationLoaded('stepValues')) {
+                                        foreach ($step->stepValues as $stepValue) {
+                                            $isDefault = false;
+                                            foreach ($step->step_default_values as $defaultValue) {
+                                                if (
+                                                    isset($defaultValue->key, $stepValue->variable_code) &&
+                                                    $stepValue->variable_code === $defaultValue->key
+                                                ) {
+                                                    $isDefault = true;
+                                                    break;
+                                                }
+                                            }
+
+                                            if ($stepValueId) {
+                                                $code = $stepValue->variable_code ?? null;
+                                                $stepValue->value = $dataValueMap[$stepValueId][$code] ?? null;
+                                                $stepValue->timestamp = $dataValueMap[$stepValueId]['timestamp']
+                                                    ?? $stepValueModel->updated_at;
+                                            } else {
+                                                $stepValue->value = null;
+                                            }
+
+                                            $stepValue->is_default = $isDefault;
+                                        }
+                                    }
+                                });
+                            }
+
+                            $item['operation_name'] = $item->operation->name ?? null;
+                            $item['operation_code'] = $item->operation->code ?? null;
+                            $item['operation_symbol'] = $item->operation->symbol ?? null;
+
+                            $item['score_name'] = $item->scoreType->name ?? null;
+                            $item['score_code'] = $item->scoreType->code ?? null;
+                            $item['score_symbol'] = $item->scoreType->symbol ?? null;
+
+                            $item['criteria_type_name'] = $item->criteriaType->name ?? null;
+                            $item['criteria_type_code'] = $item->criteriaType->code ?? null;
+
+                            return $item;
+                        });
+
+                        return [
+                            'category' => $category,
+                            'total_weight_active' => (float) $categoryItems->where('is_active', true)->sum('score'),
+                            'items' => $items,
+                        ];
+                    })
+                    ->values();
+
+                return [
+                    'assessment' => $assessment,
+                    'categories' => $categories,
+                ];
+            });
+    }
+
+    /* =========================================================
+     *  STORE WO (logika bisnis tetap di service)
+     * ========================================================= */
 
     public function storeWo(Request $request, ?string $id = null)
     {
@@ -222,17 +324,14 @@ class ValidationWoService
 
         $data['status_id'] = $statusAssessmentCode->id;
 
-        // Cek apakah assessment_code valid melalui WoInterface::checkAssessmentCode
         if (isset($data['assessment_type'])) {
             $assessmentCode = $this->woInterface->checkAssessmentCode($data['assessment_type']);
             if (!$assessmentCode) {
                 throw new HttpException(400, 'Kode assessment tidak ditemukan atau tidak valid.');
             }
-            // set assessment_code_id jika kosong dari validasi kode
             $data['assessment_code_id'] = $assessmentCode->id;
         }
 
-        // Cek dedup berdasarkan pppoe_secret sebelum melakukan proses selanjutnya
         $pppoeSecret = $data['customer']['pppoe_secret'] ?? null;
         if ($pppoeSecret) {
             $existingWo = $this->woInterface->findByPppoeSecret($pppoeSecret);
@@ -242,14 +341,11 @@ class ValidationWoService
         }
 
         return DB::transaction(function () use ($data, $id, $erpExtra, $custExtra, $techExtra, $psbExtra) {
-            // 1. Proses Assessment Transaction (Work Order utama)
             $transactionData = [
                 'pppoe_secret' => $data['customer']['pppoe_secret'] ?? null,
                 'assessment_code_id' => $data['assessment_code_id'] ?? null,
                 'work_order_id' => $data['work_order']['wo_id'] ?? null,
                 'current_pic_id' => $data['current_pic_id'] ?? null,
-                // 'company_code' => $data['company_code'] ?? 'griya',
-                // 'system_code' => $data['system_code'] ?? null,
                 'started_at' => $data['work_order']['start_work_order'] ?? null,
                 'completed_at' => $data['work_order']['end_work_order'] ?? null,
                 'status_id' => $data['status_id'] ?? null,
@@ -258,22 +354,18 @@ class ValidationWoService
             ];
 
             $transaction = $this->woInterface->storeWo($transactionData, $id);
+            $transactionId = $transaction[0]['id'] ?? $transaction->id ?? null;
 
             $logData = [
-                'assessment_transaction_id' => $transaction[0]['id'] ?? $transaction->id ?? null,
+                'assessment_transaction_id' => $transactionId,
                 'from_status_id' => null,
                 'to_status_id' => $transactionData['status_id'] ?? null,
                 'changed_by' => 'APIKEY',
                 'changed_at' => now(),
                 'remark' => null,
             ];
-
             $this->validationWoInterface->upsertLogAssessmentTransactional($logData, null);
 
-            // Ambil ID transaction yang baru dibuat atau diupdate
-            $transactionId = $transaction[0]['id'] ?? $transaction->id ?? null;
-
-            // 2. Proses Assessment Information (Customer)
             $assessmentData = [
                 'assessment_transaction_id' => $transactionId,
                 'branch_id' => $data['customer']['branch_id'] ?? null,
@@ -295,7 +387,7 @@ class ValidationWoService
 
             $assessment = $this->woInterface->upsertAssessmentInformation($assessmentData, null);
             $assessmentId = $assessment[0]['id'] ?? $assessment->id ?? null;
-            // 3. Proses Assessment Technical Information
+
             $technicalData = [
                 'assessment_information_id' => $assessmentId,
                 'area_id' => $data['technical_data']['area_id'] ?? null,
@@ -309,11 +401,8 @@ class ValidationWoService
                 'customer_port' => $data['technical_data']['customer_port'] ?? null,
                 'tech_extra' => $data['tech_extra'] ?? $techExtra ?? null,
             ];
-
             $technical = $this->woInterface->upsertAssessmentInformationTechnical($technicalData, null);
-            $technicalId = $technical[0]['id'] ?? $technical->id ?? null;
 
-            // 4. Proses Assessment WO PSB Information
             $woPsbData = [
                 'assessment_information_id' => $assessmentId,
                 'team_id' => $data['work_order']['detail']['team_id'] ?? null,
@@ -326,10 +415,8 @@ class ValidationWoService
                 'cable_detail_history_id' => $data['work_order']['detail']['cable_detail_history_id'] ?? null,
                 'psb_extra' => $data['psb_extra'] ?? $psbExtra ?? null,
             ];
-
             $woPsb = $this->woInterface->upsertAssessmentWoPsbInformation($woPsbData, null);
 
-            // 5. Proses Assessment PIC Information
             $pics = [];
             foreach ($data['pic'] as $index => $pic) {
                 $picData = [
@@ -339,12 +426,10 @@ class ValidationWoService
                     'nick_name' => $pic['nick_name'] ?? null,
                     'full_name' => $pic['full_name'] ?? null,
                     'is_primary' => $pic['is_primary'] ?? ($pic['order'] == 1 ? 1 : 0),
-
                 ];
                 $pics[] = $this->woInterface->upsertAssessmentPicInformation($picData, null);
             }
 
-            // 6. Proses Assessment Step
             $steps = [];
             foreach ($data['step'] as $index => $stepData) {
                 $stepPayload = [
@@ -353,16 +438,13 @@ class ValidationWoService
                     'step_code' => $stepData['step_code'] ?? null,
                     'step_name' => $stepData['step_name'] ?? null,
                     'order_number' => $stepData['order_number'] ?? $index ?? 0,
-
-                    // Jika hanya ada submitted_at
-                    'created_at' => isset($stepData['submitted_at']) ? $stepData['submitted_at'] : null,
-                    'updated_at' => isset($stepData['submitted_at']) ? $stepData['submitted_at'] : null,
-
+                    'created_at' => $stepData['submitted_at'] ?? null,
+                    'updated_at' => $stepData['submitted_at'] ?? null,
                 ];
 
                 $step = $this->woInterface->upsertAssessmentStep($stepPayload, null);
                 $stepId = $step[0]['id'] ?? $step->id ?? null;
-                // 7. Proses Assessment Step Values
+
                 if (isset($stepData['data_values']) && is_array($stepData['data_values'])) {
                     foreach ($stepData['data_values'] as $valueData) {
                         $stepValueData = [
@@ -379,7 +461,7 @@ class ValidationWoService
                 $steps[] = $step;
             }
 
-            $this->publishReverb($transaction->id, 'WAITING');
+            $this->publishReverb($transactionId, 'WAITING');
 
             return [
                 'success' => true,
@@ -391,21 +473,20 @@ class ValidationWoService
                     'wo_psb' => $woPsb,
                     'pics' => $pics,
                     'steps' => $steps,
-                    'assessment_type' => $data['assessment_type'] ?? null
-                ]
+                    'assessment_type' => $data['assessment_type'] ?? null,
+                ],
             ];
         });
     }
 
     private function publishReverb($id, $action)
     {
+        // ✅ Invalidate cache count supaya fresh
+        $this->validationWoInterface->forgetWoNotCompleteCache();
+
         $countWo = $this->validationWoInterface->countWoNotComplete();
 
-        broadcast(new WorkOrderUpdated(
-            $id,
-            $action,
-            $countWo
-        ));
+        broadcast(new WorkOrderUpdated($id, $action, $countWo));
     }
 
     public function getWoNotComplete()
@@ -413,34 +494,39 @@ class ValidationWoService
         return $this->validationWoInterface->countWoNotComplete();
     }
 
+    /* =========================================================
+     *  UPDATE WO
+     *  ✅ Semua logika bisnis di service:
+     *     - Generate UUID untuk row baru
+     *     - Generate step ID dulu sebelum step values
+     *     - Pisahkan insert & update batch
+     *     - Hitung score & tentukan result
+     * ========================================================= */
+
     public function updateWo(array $data, ?string $id = null)
     {
-
-        // Ambil status_id dari transaction yang telah di-eager load
         $transaction = $this->validationWoInterface->showWoWithRelations($id);
 
         if (empty($transaction) || (is_array($transaction) && empty($transaction[0]))) {
             throw new HttpException(400, 'Work Order tidak ditemukan atau tidak valid.');
         }
 
-        // Dapatkan status_id dari hasil transaction
-        if (is_array($transaction)) {
-            $statusId = $transaction[0]['status_id'] ?? null;
-        } elseif (is_object($transaction)) {
-            $statusId = $transaction->status_id ?? null;
-        } else {
-            $statusId = null;
-        }
+        $statusId = is_object($transaction)
+            ? ($transaction->status_id ?? null)
+            : ($transaction[0]['status_id'] ?? null);
 
-        return DB::transaction(function () use ($data, $id, $statusId) {
-            // 1. Update main transaction
+        $statusResult = $this->validationWoInterface->getResultStatuses();
+        $categoryCount = $this->validationWoInterface->getTotalCategoryAssessmentGrouped() ?? 0;
+
+        return DB::transaction(function () use ($data, $id, $statusId, $categoryCount, $statusResult) {
+            $sumScore = 0;
+
             $assessmentTransactionData = [
                 'id' => $id,
-                'status_id' => $data['status'] ?? null,
-                // 'notes' => $data['notes'] ?? null,
+                'status_id' => null,
+                'result_id' => null,
             ];
 
-            // Konversi status code menjadi status id
             if (isset($data['status']) && is_string($data['status'])) {
                 $statusObj = $this->woInterface->checkStatusCode($data['status']);
                 if ($statusObj && isset($statusObj->id)) {
@@ -450,8 +536,6 @@ class ValidationWoService
                 }
             }
 
-            $this->validationWoInterface->updateValidasiWo($assessmentTransactionData, $id);
-
             $logData = [
                 'assessment_transaction_id' => $id,
                 'from_status_id' => $statusId,
@@ -460,25 +544,34 @@ class ValidationWoService
                 'changed_at' => now(),
                 'remark' => null,
             ];
-
             $this->validationWoInterface->upsertLogAssessmentTransactional($logData, null);
 
+            // ✅ Kumpulkan payload di service
+            $rulesToInsert = [];
+            $rulesToUpdate = [];
+            $stepsToInsert = [];
+            $stepsToUpdate = [];
+            $stepValuesToInsert = [];
+            $stepValuesToUpdate = [];
+
             foreach ($data['assessments'] as $assessmentData) {
-                // 1. Store assessment detail right away and get its ID
                 $assessmentDetailPayload = [
                     'id' => $assessmentData['assessment']['detail_id'] ?? null,
                     'assessment_transaction_id' => $id,
                     'assessment_id' => $assessmentData['assessment']['id'] ?? null,
                     'assessment_name' => $assessmentData['assessment']['name'] ?? null,
                     'assessment_code_id' => $assessmentData['assessment']['code'] ?? null,
-                    'total_score' => $assessmentData['assessment']['total_score'] ?? 0
+                    'total_score' => $assessmentData['assessment']['total_score'] ?? 0,
                 ];
-                $assessmentDetailModel = $this->validationWoInterface->upsertAssessmentWo($assessmentDetailPayload, $assessmentDetailPayload['id']);
+                $sumScore += $assessmentDetailPayload['total_score'];
+
+                $assessmentDetailModel = $this->validationWoInterface
+                    ->upsertAssessmentWo($assessmentDetailPayload, $assessmentDetailPayload['id']);
+
                 $assessmentDetailId = is_array($assessmentDetailModel) && isset($assessmentDetailModel[0]['id'])
                     ? $assessmentDetailModel[0]['id']
                     : ($assessmentDetailModel->id ?? $assessmentDetailPayload['id']);
 
-                // 2. Category loop
                 foreach ($assessmentData['categories'] as $categoryData) {
                     $criteriaPayload = [
                         'id' => $categoryData['category']['detail_criteria_id'] ?? null,
@@ -494,82 +587,131 @@ class ValidationWoService
                         'max_score' => $categoryData['category']['max_score'] ?? 0,
                         'obtained_score' => $categoryData['category']['obtained_score'] ?? 0,
                         'calculated_value' => $categoryData['category']['calculate_value'] ?? null,
-                        'description' => $categoryData['category']['description'] ?? null
+                        'description' => $categoryData['category']['description'] ?? null,
                     ];
-                    $criteriaModel = $this->validationWoInterface->upsertAssessmentDetailCriteriaWo($criteriaPayload, $criteriaPayload['id']);
+
+                    $criteriaModel = $this->validationWoInterface
+                        ->upsertAssessmentDetailCriteriaWo($criteriaPayload, $criteriaPayload['id']);
+
                     $criteriaTransactionId = is_array($criteriaModel) && isset($criteriaModel[0]['id'])
                         ? $criteriaModel[0]['id']
                         : ($criteriaModel->id ?? $criteriaPayload['id']);
 
-                    // 4. Rules
-                    foreach ($categoryData['item']['rules'] as $ruleData) {
-                        $rulePayload = [
-                            'id' => $ruleData['detail_rule_id'],
-                            'criteria_transaction_id' => $criteriaTransactionId,
-                            'rule_id' => $ruleData['id'],
-                            'rule_name' => $ruleData['rule'],
-                            'expected_value' => false,
-                            'actual_value' => $ruleData['is_checked'],
-                            'is_pass' => (bool) $ruleData['is_checked']
-                        ];
-                        $this->validationWoInterface->upsertAssessmentCriteriaRuleWo($rulePayload, $rulePayload['id']);
+                    // ✅ RULES - pisahkan insert vs update
+                    if (isset($categoryData['item']['rules']) && is_array($categoryData['item']['rules'])) {
+                        foreach ($categoryData['item']['rules'] as $ruleData) {
+                            $row = [
+                                'id' => !empty($ruleData['detail_rule_id'])
+                                    ? $ruleData['detail_rule_id']
+                                    : (string) Str::orderedUuid(),
+                                'criteria_transaction_id' => $criteriaTransactionId,
+                                'rule_id' => $ruleData['id'],
+                                'rule_name' => $ruleData['rule'],
+                                'expected_value' => false,
+                                'actual_value' => $ruleData['is_checked'],
+                                'is_pass' => (bool) $ruleData['is_checked'],
+                            ];
+
+                            if (!empty($ruleData['detail_rule_id'])) {
+                                $row['updated_at'] = now();
+                                $rulesToUpdate[] = $row;
+                            } else {
+                                $row['created_at'] = now();
+                                $row['updated_at'] = now();
+                                $rulesToInsert[] = $row;
+                            }
+                        }
                     }
 
-                    // 5. Steps (jika ada)
+                    // ✅ STEPS + STEP VALUES
                     if (isset($categoryData['item']['criterias']) && is_array($categoryData['item']['criterias'])) {
                         foreach ($categoryData['item']['criterias'] as $stepData) {
-                            $stepPayload = [
-                                'id' => $stepData['id_step'] ?? null,
+                            $isNewStep = empty($stepData['id_step']);
+                            $stepId = $isNewStep
+                                ? (string) Str::orderedUuid()
+                                : $stepData['id_step'];
+
+                            $stepRow = [
+                                'id' => $stepId,
                                 'criteria_transaction_id' => $criteriaTransactionId,
                                 'order' => $stepData['order'] ?? 0,
                                 'step_code' => $stepData['step_code'] ?? null,
                                 'variable_code' => $stepData['variable_key'] ?? null,
                                 'variable_name' => $stepData['variable_name'] ?? null,
                             ];
-                            $stepModel = $this->validationWoInterface->upsertAssessmentCriteriaStepWo($stepPayload, $stepPayload['id']);
-                            $stepId = is_array($stepModel) && isset($stepModel[0]['id'])
-                                ? $stepModel[0]['id']
-                                : ($stepModel->id ?? $stepPayload['id']);
 
-                            $stepValuePayload = [
-                                'id' => $stepData['id_step_input'] ?? null,
-                                'assessment_step_values_id' => $stepData['id_step'] ?? $stepId ?? null,
+                            if ($isNewStep) {
+                                $stepRow['created_at'] = now();
+                                $stepRow['updated_at'] = now();
+                                $stepsToInsert[] = $stepRow;
+                            } else {
+                                $stepRow['updated_at'] = now();
+                                $stepsToUpdate[] = $stepRow;
+                            }
+
+                            $isNewStepValue = empty($stepData['id_step_input']);
+                            $stepValueRow = [
+                                'id' => $isNewStepValue
+                                    ? (string) Str::orderedUuid()
+                                    : $stepData['id_step_input'],
+                                'assessment_step_values_id' => $stepId, // FK ke step yang baru dibuat
                                 'variable_name' => $stepData['variable_name'] ?? null,
                                 'variable_code' => $stepData['variable_key'] ?? null,
                                 'order' => $stepData['order'] ?? 0,
                                 'type_data' => $stepData['type_data'] ?? null,
                                 'value' => $stepData['value'] ?? null,
                             ];
-                            $this->validationWoInterface->upsertAssessmentCriteriaStepValueWo($stepValuePayload, $stepValuePayload['id']);
+
+                            if ($isNewStepValue) {
+                                $stepValueRow['created_at'] = now();
+                                $stepValueRow['updated_at'] = now();
+                                $stepValuesToInsert[] = $stepValueRow;
+                            } else {
+                                $stepValueRow['updated_at'] = now();
+                                $stepValuesToUpdate[] = $stepValueRow;
+                            }
                         }
                     }
                 }
             }
 
+            // ✅ Batch insert (row baru dengan UUID yang sudah di-generate di service)
+            $this->validationWoInterface->insertBatchAssessmentDetailRules($rulesToInsert);
+            $this->validationWoInterface->insertBatchAssessmentSteps($stepsToInsert);
+            $this->validationWoInterface->insertBatchStepInputValues($stepValuesToInsert);
+
+            // ✅ Batch update (row existing)
+            $this->validationWoInterface->updateBatchAssessmentDetailRules($rulesToUpdate);
+            $this->validationWoInterface->updateBatchAssessmentSteps($stepsToUpdate);
+            $this->validationWoInterface->updateBatchStepInputValues($stepValuesToUpdate);
+
+            // ✅ Hitung skor & tentukan result (logika bisnis di service)
+            $resultScore = ($sumScore != 0 && $categoryCount != 0) ? $sumScore / $categoryCount : 0;
+            $resultCode = $resultScore >= 100 ? 'NORMAL' : 'ABNORMAL';
+            $statusResultItem = collect($statusResult)->firstWhere('code', $resultCode);
+
+            if ($statusResultItem) {
+                $assessmentTransactionData['result_id'] = $statusResultItem->id;
+            }
+
+            $this->validationWoInterface->updateValidasiWo($assessmentTransactionData, $id);
             $this->publishReverb($id, $data['status']);
 
-            // 4. Return the updated Work Order
             return $this->validationWoInterface->showWoWithRelations($id);
         });
     }
 
     public function updateStatusProgress(string $id, string $statusCode)
     {
-        // Ambil status_id dari transaction yang telah di-eager load
         $transaction = $this->validationWoInterface->showWoWithRelations($id);
 
         if (empty($transaction) || (is_array($transaction) && empty($transaction[0]))) {
             throw new HttpException(400, 'Work Order tidak ditemukan atau tidak valid.');
         }
 
-        // Dapatkan status_id dari hasil transaction
-        if (is_array($transaction)) {
-            $statusId = $transaction[0]['status_id'] ?? null;
-        } elseif (is_object($transaction)) {
-            $statusId = $transaction->status_id ?? null;
-        } else {
-            $statusId = null;
-        }
+        $statusId = is_object($transaction)
+            ? ($transaction->status_id ?? null)
+            : ($transaction[0]['status_id'] ?? null);
 
         $statusObj = $this->woInterface->checkStatusCode($statusCode);
         if (!$statusObj || !isset($statusObj->id)) {

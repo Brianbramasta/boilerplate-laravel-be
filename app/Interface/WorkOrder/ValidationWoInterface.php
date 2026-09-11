@@ -38,4 +38,8 @@ interface ValidationWoInterface
     public function getTotalCategoryAssessmentGrouped();
     public function getResultStatuses();
     public function forgetWoNotCompleteCache(): void;
+
+    public function getExpiredInProgressLogs();
+    public function batchUpdateAssessmentStatuses(array $mapping): int;
+    public function batchInsertLogs(array $logs): bool;
 }

@@ -8,10 +8,10 @@ Route::controller(DashboardController::class)->group(function () {
     Route::get('/summary', 'summary')->name('dashboard.summary');
 
     // Cluster Work Order
-    Route::get('/cluster-work-order', 'clusterWorkOrder')->name('dashboard.cluster.work.order');
+    Route::get('/work-order', 'clusterWorkOrder')->name('dashboard.cluster.work.order');
 
     // Cluster History
-    Route::get('/cluster-history', 'clusterHistory')->name('dashboard.cluster.history');
+    Route::get('/work-order-history', 'clusterHistory')->name('dashboard.cluster.history');
 
     Route::get('/qc-average', 'qcAverageMatrix')->name('dashboard.qc.average');
 

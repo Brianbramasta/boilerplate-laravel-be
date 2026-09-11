@@ -23,7 +23,7 @@ class DashboardRequest extends FormRequest
         return [
             'start_date' => 'nullable|date|date_format:Y-m-d',
             'end_date' => 'nullable|date|date_format:Y-m-d|after_or_equal:start_date',
-            'branch_id' => 'nullable|string|exists:ref_branches,id'
+            'branch_id' => 'nullable|string'
         ];
     }
 
@@ -38,7 +38,6 @@ class DashboardRequest extends FormRequest
             'end_date.date' => 'Format tanggal akhir tidak valid',
             'end_date.date_format' => 'Format tanggal akhir harus YYYY-MM-DD',
             'end_date.after_or_equal' => 'Tanggal akhir harus setelah atau sama dengan tanggal mulai',
-            'branch_id.exists' => 'Branch ID tidak ditemukan'
         ];
     }
 }

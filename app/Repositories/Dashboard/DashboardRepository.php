@@ -18,7 +18,9 @@ class DashboardRepository implements DashboardInterface
     public function getTotalWoMasuk($startDate = null, $endDate = null, $branchId = null)
     {
         $query = $this->model
-            ->join('dt_assessment_informations as info', 'tr_assessments.id', '=', 'info.assessment_transaction_id');
+            ->join('dt_assessment_informations as info', 'tr_assessments.id', '=', 'info.assessment_transaction_id')
+            ->join('ref_assessment_statuses as status', 'tr_assessments.status_id', '=', 'status.id')
+            ->where('status.code', '!=', 'COMPLETE');
 
         if ($startDate && $endDate) {
             $query->whereBetween('info.work_order_date', [$startDate, $endDate]);
@@ -39,7 +41,7 @@ class DashboardRepository implements DashboardInterface
         $query = $this->model
             ->join('dt_assessment_informations as info', 'tr_assessments.id', '=', 'info.assessment_transaction_id')
             ->join('ref_assessment_statuses as status', 'tr_assessments.status_id', '=', 'status.id')
-            ->where('status.code', '!=', 'COMPLETE');
+            ->where('status.code', '=', 'WAITING');
 
         if ($startDate && $endDate) {
             $query->whereBetween('info.work_order_date', [$startDate, $endDate]);

@@ -3,11 +3,17 @@
 
 namespace App\Services\Dashboard;
 
-use App\Repositories\Dashboard\DashboardRepository;
+use App\Interface\WorkOrder\DashboardInterface;
 
 class DashboardService
 {
-    public function __construct(protected DashboardRepository $dashboardRepository) {}
+    private DashboardInterface $dashboardInterface;
+
+    public function __construct(
+        DashboardInterface $dashboardInterface
+    ) {
+        $this->dashboardInterface = $dashboardInterface;
+    }
 
     /**
      * Get cluster work order data
@@ -15,9 +21,9 @@ class DashboardService
     public function getClusterWorkOrder($startDate = null, $endDate = null, $branchId = null)
     {
         return [
-            'total_wo_masuk' => $this->dashboardRepository->getTotalWoMasuk($startDate, $endDate, $branchId),
-            'menunggu_validasi' => $this->dashboardRepository->getWoMenungguValidasi($startDate, $endDate, $branchId),
-            'draft_validasi' => $this->dashboardRepository->getDraftValidasi($startDate, $endDate, $branchId),
+            'total_wo_masuk' => $this->dashboardInterface->getTotalWoMasuk($startDate, $endDate, $branchId),
+            'menunggu_validasi' => $this->dashboardInterface->getWoMenungguValidasi($startDate, $endDate, $branchId),
+            'draft_validasi' => $this->dashboardInterface->getDraftValidasi($startDate, $endDate, $branchId),
         ];
     }
 
@@ -27,9 +33,9 @@ class DashboardService
     public function getClusterHistory($startDate = null, $endDate = null, $branchId = null)
     {
         return [
-            'total_wo_divalidasi' => $this->dashboardRepository->getTotalWoDivalidasi($startDate, $endDate, $branchId),
-            'total_wo_normal' => $this->dashboardRepository->getTotalWoNormal($startDate, $endDate, $branchId),
-            'total_variabel_abnormal' => $this->dashboardRepository->getTotalVariabelAbnormal($startDate, $endDate, $branchId),
+            'total_wo_divalidasi' => $this->dashboardInterface->getTotalWoDivalidasi($startDate, $endDate, $branchId),
+            'total_wo_normal' => $this->dashboardInterface->getTotalWoNormal($startDate, $endDate, $branchId),
+            'total_variabel_abnormal' => $this->dashboardInterface->getTotalVariabelAbnormal($startDate, $endDate, $branchId),
         ];
     }
 
@@ -39,7 +45,7 @@ class DashboardService
     public function getAverageQcScoreMatrix($startDate = null, $endDate = null, $branchId = null)
     {
         // Get raw data dari repository
-        $results = $this->dashboardRepository->getAverageQcScore($startDate, $endDate, $branchId);
+        $results = $this->dashboardInterface->getAverageQcScore($startDate, $endDate, $branchId);
 
         // Format data menjadi matrix
         $matrix = [];
@@ -115,8 +121,8 @@ class DashboardService
      */
     public function getRankingKatim($startDate = null, $endDate = null, $branchId = null)
     {
-        $results = $this->dashboardRepository->getRankingKatim($startDate, $endDate, $branchId);
-        $categoryCount = $this->dashboardRepository->getTotalCategoryAssessmentGrouped();
+        $results = $this->dashboardInterface->getRankingKatim($startDate, $endDate, $branchId);
+        $categoryCount = $this->dashboardInterface->getTotalCategoryAssessmentGrouped();
 
         $rank = 1;
         $data = [];
@@ -137,8 +143,8 @@ class DashboardService
      */
     public function getRankingBranch($startDate = null, $endDate = null)
     {
-        $results = $this->dashboardRepository->getRankingBranch($startDate, $endDate);
-        $categoryCount = $this->dashboardRepository->getTotalCategoryAssessmentGrouped();
+        $results = $this->dashboardInterface->getRankingBranch($startDate, $endDate);
+        $categoryCount = $this->dashboardInterface->getTotalCategoryAssessmentGrouped();
 
         $rank = 1;
         $data = [];
@@ -159,7 +165,7 @@ class DashboardService
      */
     public function getTopAbnormalRules($startDate = null, $endDate = null, $branchId = null)
     {
-        $results = $this->dashboardRepository->getTopAbnormalRules($startDate, $endDate, $branchId);
+        $results = $this->dashboardInterface->getTopAbnormalRules($startDate, $endDate, $branchId);
 
         $data = [];
         foreach ($results as $row) {

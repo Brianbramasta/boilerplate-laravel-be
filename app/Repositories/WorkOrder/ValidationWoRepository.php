@@ -4,6 +4,8 @@ namespace App\Repositories\WorkOrder;
 
 use App\Helpers\QueryFilterHelper;
 use App\Interface\WorkOrder\ValidationWoInterface;
+use App\Models\AssessmentPSB\AssessmentStepDataValue;
+use App\Models\AssessmentPSB\AssessmentStepValue;
 use App\Models\AssessmentPSB\AssessmentTransaction;
 use App\Models\AssessmentPSB\AssessmentTransactionDetail;
 use App\Models\AssessmentPSB\AssessmentTransactionDetailCriteria;
@@ -13,69 +15,93 @@ use App\Models\AssessmentPSB\AssessmentTransactionStepValue;
 use App\Models\AssessmentPSB\StepInputValue;
 use App\Models\Master\Assessment;
 use App\Models\Master\AssessmentCriteria;
+use App\Models\Ref\AssessmentResult;
 use App\Models\Ref\AssessmentStatus;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 class ValidationWoRepository implements ValidationWoInterface
 {
     protected string $path = 'psb-wo-steps.json';
 
-    public function __construct() {}
+    public function __construct()
+    {
+    }
+
+    /* =========================================================
+     *  INDEX
+     * ========================================================= */
 
     public function index(array $data)
     {
-        // Inisialisasi model dan tabel
         $baseModel = new AssessmentTransaction;
         $baseTable = $baseModel->getTable();
 
-        // Query dasar mt_component
         $query = $baseModel->newQuery()
             ->addSelect("{$baseTable}.id")
             ->addSelect("{$baseTable}.pppoe_secret")
+            ->addSelect("{$baseTable}.status_id")
+            ->addSelect("{$baseTable}.result_id")
             ->addSelect("ai.work_order_date as wo_date")
             ->addSelect("ai.no_wo")
             ->addSelect("ai.branch_name")
-            ->addSelect("ai.pppoe_secret")
             ->addSelect("ai.customer_name")
             ->addSelect("ati.splitter")
             ->addSelect("atipsb.team_name")
             ->addSelect("pic.full_name as katim")
-            ->addSelect('rs.code as status')
-            ->addSelect('rs.name as status_name');
+            ->addSelect("rs.code as status")
+            ->addSelect("rs.name as status_name")
+            ->addSelect("rsr.code as result_code")
+            ->addSelect("rsr.name as result_name");
 
         $query->with([
-            'logsNewest',
+            'logsNewest:id,assessment_transaction_id,changed_by,created_at',
+            'logsNewest.byUser:id,name',
             'scoreAverage',
-            'logsNewest.byUser',
         ]);
 
-        // Kolom yang bisa dicari (searchable)
         $searchableColumns = [
             "{$baseTable}.pppoe_secret",
             "{$baseTable}.company_code",
         ];
 
-        $query->leftjoin('ref_assessment_statuses as rs', "{$baseTable}.status_id", '=', 'rs.id');
-        $query->leftjoin('dt_assessment_informations as ai', "{$baseTable}.id", '=', 'ai.assessment_transaction_id');
-        $query->leftjoin('dt_assessment_technical_informations as ati', "ai.id", '=', 'ati.assessment_information_id');
-        $query->leftjoin('dt_assessment_wo_psb_informations as atipsb', "ai.id", '=', 'atipsb.assessment_information_id');
-        $query->leftjoin('dt_assessment_pic_informations as pic', function ($join) {
-            $join->on("ai.id", '=', 'pic.assessment_information_id')
+        $query->leftJoin('ref_assessment_statuses as rs', "{$baseTable}.status_id", '=', 'rs.id');
+        $query->leftJoin('ref_assessment_results as rsr', "{$baseTable}.result_id", '=', 'rsr.id');
+        $query->leftJoin('dt_assessment_informations as ai', "{$baseTable}.id", '=', 'ai.assessment_transaction_id');
+        $query->leftJoin('dt_assessment_technical_informations as ati', 'ai.id', '=', 'ati.assessment_information_id');
+        $query->leftJoin('dt_assessment_wo_psb_informations as atipsb', 'ai.id', '=', 'atipsb.assessment_information_id');
+        $query->leftJoin('dt_assessment_pic_informations as pic', function ($join) {
+            $join->on('ai.id', '=', 'pic.assessment_information_id')
                 ->where('pic.is_primary', 1);
         });
 
-        // Jika ada 'status' di $data, lakukan join dengan tabel ref_status dan where pada status.code
-        if (isset($data['status']) && $data['status'] !== null && $data['status'] !== '') {
-            $query->where('rs.code', $data['status']);
+        $status = $data['status'] ?? null;
+        $hasStatus = $status !== null && $status !== '';
+
+        if (isset($data['is_complete']) && $data['is_complete'] !== null && $data['is_complete'] !== '') {
+            $query->where('rs.code', 'COMPLETE');
+
+            if ($hasStatus) {
+                $query->where('rsr.code', $status);
+            }
+        } else {
+            $query->where('rs.code', '!=', 'COMPLETE');
+
+            if ($hasStatus) {
+                $query->where("{$baseTable}.status_id", $status);
+            }
         }
 
-        QueryFilterHelper::applyDynamicFilters(
-            $query,
-            $data,
-            $searchableColumns
-        );
+        if (!empty($data['branch'])) {
+            $query->where('ai.branch_id', $data['branch']);
+        }
 
-        // Pagination handling
+        if (!empty($data['katim'])) {
+            $query->where('pic.full_name', $data['katim']);
+        }
+
+        QueryFilterHelper::applyDynamicFilters($query, $data, $searchableColumns);
+
         $page = isset($data['page']) ? (int) $data['page'] : null;
         $perPage = isset($data['per_page']) ? (int) $data['per_page'] : 20;
 
@@ -84,215 +110,95 @@ class ValidationWoRepository implements ValidationWoInterface
             : $query->get();
     }
 
-    public function showMasterVariables(string $assessmentInformationId)
+    /* =========================================================
+     *  MASTER VARIABLES (data access + eager load)
+     * ========================================================= */
+
+    public function getActiveAssessmentsWithCriteria(): \Illuminate\Support\Collection
     {
-        if (!Storage::exists($this->path)) {
-            return collect();
-        }
+        return Assessment::where('is_active', true)
+            ->orderBy('name')
+            ->get();
+    }
 
-        $variable = collect(json_decode(Storage::get($this->path) ?: '[]', false));
-
-        // echo json_encode($variable->toArray());
-        // Dikelompokkan per assessment_id dulu, supaya proses (mt_assessments)
-        // yang belum punya item sama sekali tetap bisa "diisi" jadi grup kosong
-        // di bawah, bukan hilang dari response.
-        $criteriaByAssessment = AssessmentCriteria::with([
+    public function getCriteriaGroupedByAssessment(): \Illuminate\Support\Collection
+    {
+        return AssessmentCriteria::with([
             'category',
             'operation',
             'scoreType',
             'criteriaType',
             'rules',
             'steps',
-            'steps.stepValues'
+            'steps.stepValues',
         ])
             ->orderBy('criteria_code')
             ->get()
             ->groupBy('assessment_id');
-
-        return Assessment::where('is_active', true)
-            ->orderBy('name')
-            ->get()
-            ->map(function ($assessment) use ($criteriaByAssessment, $variable, $assessmentInformationId) {
-                $assessmentItems = $criteriaByAssessment->get($assessment->id, collect());
-
-                $categories = $assessmentItems
-                    ->groupBy('assessment_category_id')
-                    ->map(function ($categoryItems) use ($variable, $assessmentInformationId) {
-                        $category = $categoryItems->first()->category;
-
-                        // Tambahkan step_default_values pada setiap step,
-                        // dan flag is_default pada step_value jika variable_code sama dengan key pada step_default_values
-                        $items = $categoryItems->values()->map(function ($item) use ($variable, $assessmentInformationId) {
-                            // Pastikan steps sudah di-load
-                            if ($item->relationLoaded('steps')) {
-                                $item->steps->each(function ($step) use ($variable, $assessmentInformationId) {
-                                    // Pastikan $variable tersedia dalam scope
-                                    // var_dump($step->toArray());
-                                    $matchingVariable = $variable->first(function ($v) use ($step) {
-                                        return (int)($v->id) === (int)($step->step_id);
-                                    });
-
-                                    // step_default_values: pada setiap item tambahkan property 'value'
-                                    $stepDefaultValues = [];
-                                    $defaultComponent = $matchingVariable->default_component ?? [];
-
-                                    // var_dump($defaultComponent);
-
-                                    foreach ($defaultComponent as $componentItem) {
-                                        $itemWithValue = (array) $componentItem;
-                                        // Ambil value dari tabel dt_assessment_step_values berdasarkan step id
-                                        $stepValueModel = \App\Models\AssessmentPSB\AssessmentStepValue::where('assessment_information_id', $assessmentInformationId)
-                                            ->where('step_id', $step->step_id)
-                                            ->first();
-
-
-                                        if ($stepValueModel) {
-
-                                            $dataValue = \App\Models\AssessmentPSB\AssessmentStepDataValue::where('assessment_step_values_id', $stepValueModel->id)
-                                                ->where('data_code', $itemWithValue['key'] ?? null)
-                                                ->first();
-
-                                            $itemWithValue['value'] = $dataValue ? $dataValue->value : null;
-
-                                            $dataValue = \App\Models\AssessmentPSB\AssessmentStepDataValue::where('assessment_step_values_id', $stepValueModel->id)
-                                                ->where('data_code', 'timestamp')
-                                                ->first();
-                                            $itemWithValue['timestamp'] = $dataValue && $dataValue->value
-                                                ? $dataValue->value
-                                                : ($stepValueModel ? $stepValueModel->updated_at : null);
-                                        } else {
-                                            $itemWithValue['value'] = null;
-                                        }
-
-                                        $stepDefaultValues[] = (object)$itemWithValue;
-                                    }
-                                    $step->step_default_values = $stepDefaultValues;
-
-                                    // Tambahkan flag is_default pada stepValues jika variable_code sama dengan key pada step_default_values
-                                    if ($step->relationLoaded('stepValues')) {
-                                        foreach ($step->stepValues as $stepValue) {
-                                            $isDefault = false;
-                                            foreach ($step->step_default_values as $defaultValue) {
-                                                if (
-                                                    isset($defaultValue->key) &&
-                                                    isset($stepValue->variable_code) &&
-                                                    $stepValue->variable_code === $defaultValue->key
-                                                ) {
-                                                    $isDefault = true;
-                                                    break;
-                                                }
-                                            }
-                                            // Tambahkan value juga pada stepValue dari tabel dt_assessment_step_data_values jika ada, berdasarkan assessment_step_values_id dan variable_code
-                                            $stepValueModel = \App\Models\AssessmentPSB\AssessmentStepValue::where('assessment_information_id', $assessmentInformationId)
-                                                ->where('step_id', $step->step_id)
-                                                ->first();
-
-                                            if ($stepValueModel) {
-                                                $dataValue = \App\Models\AssessmentPSB\AssessmentStepDataValue::where('assessment_step_values_id', $stepValueModel->id)
-                                                    ->where('data_code', $stepValue->variable_code ?? null)
-                                                    ->first();
-                                                $stepValue->value = $dataValue ? $dataValue->value : null;
-
-                                                $dataValue = \App\Models\AssessmentPSB\AssessmentStepDataValue::where('assessment_step_values_id', $stepValueModel->id)
-                                                    ->where('data_code', 'timestamp')
-                                                    ->first();
-                                                $stepValue->timestamp = $dataValue && $dataValue->value
-                                                    ? $dataValue->value
-                                                    : ($stepValueModel ? $stepValueModel->updated_at : null);
-                                            } else {
-                                                $stepValue->value = null;
-                                            }
-
-                                            $stepValue->is_default = $isDefault;
-                                            // $stepValue->id_step_values = '';
-                                        }
-                                    }
-                                });
-                            }
-
-                            // tambahkan operation_name dan score_name dalam item
-                            if (isset($item['operation_id'])) {
-                                $item['operation_name'] = $item->operation->name ?? null;
-                                $item['operation_code'] = $item->operation->code ?? null;
-                                $item['operation_symbol'] = $item->operation->symbol ?? null;
-                            } else {
-                                $item['operation_name'] = null;
-                                $item['operation_code'] = null;
-                                $item['operation_symbol'] = null;
-                            }
-
-                            if (isset($item['score_type_id'])) {
-                                $item['score_name'] = $item->scoreType->name ?? null;
-                                $item['score_code'] = $item->scoreType->code ?? null;
-                                $item['score_symbol'] = $item->scoreType->symbol ?? null;
-                            } else {
-                                $item['score_name'] = null;
-                                $item['score_code'] = null;
-                                $item['score_symbol'] = null;
-                            }
-
-                            if (isset($item['criteria_type_id'])) {
-                                $item['criteria_type_name'] = $item->criteriaType->name ?? null;
-                                $item['criteria_type_code'] = $item->criteriaType->code ?? null;
-                            } else {
-                                $item['criteria_type_name'] = null;
-                                $item['criteria_type_code'] = null;
-                            }
-
-                            return $item;
-                        });
-
-
-                        return [
-                            'category' => $category,
-                            'total_weight_active' => (float) $categoryItems->where('is_active', true)->sum('score'),
-                            'items' => $items,
-                        ];
-                    })
-                    ->values();
-
-                return [
-                    'assessment' => $assessment,
-                    'categories' => $categories,
-                ];
-            });
     }
 
-    // Di ValidationWoRepository.php - Tambahkan method showWoWithRelations
+    public function getStepValuesKeyedByStepId(string $assessmentInformationId): \Illuminate\Support\Collection
+    {
+        return AssessmentStepValue::where('assessment_information_id', $assessmentInformationId)
+            ->get()
+            ->keyBy('step_id');
+    }
+
+    public function getStepDataValuesMap(array $stepValueIds): array
+    {
+        if (empty($stepValueIds)) {
+            return [];
+        }
+
+        $map = [];
+        $dataValues = AssessmentStepDataValue::whereIn('assessment_step_values_id', $stepValueIds)
+            ->get(['assessment_step_values_id', 'data_code', 'value']);
+
+        foreach ($dataValues as $dv) {
+            $map[$dv->assessment_step_values_id][$dv->data_code] = $dv->value;
+        }
+
+        return $map;
+    }
+
+    public function getMasterVariablesJson(): array
+    {
+        if (!Storage::exists($this->path)) {
+            return [];
+        }
+
+        return json_decode(Storage::get($this->path) ?: '[]', false) ?? [];
+    }
+
+    /* =========================================================
+     *  SHOW WO WITH RELATIONS
+     * ========================================================= */
+
     public function showWoWithRelations(string $id)
     {
         return AssessmentTransaction::where('id', $id)
             ->with([
-                // 'details' => function ($query) {
-                //     $query->with([
-                //         'detailCriteria' => function ($q) {
-                //             $q->with([
-                //                 'detailRules',
-                //                 'stepValues' => function ($sq) {
-                //                     $sq->with('inputValues');
-                //                 }
-                //             ]);
-                //         }
-                //     ]);
-                // },
-                // tambahan with lain, contoh relasi 'assessmentStatus' dan 'assessmentInformation'
-                'details',
-                'details.detailCriteria',
-                'details.detailCriteria.detailRules',
-                'details.detailCriteria.stepValues',
-                'details.detailCriteria.stepValues.inputValues',
-                'status',
+                'details:id,assessment_transaction_id,assessment_id,assessment_name,assessment_code_id,total_score',
+                'details.detailCriteria:id,assessment_detail_id,criteria_id,criteria_name,category_id,category_name,criteria_type_id,criteria_type_name,operation_id,score_type_id,max_score,obtained_score,calculated_value,description',
+                'details.detailCriteria.detailRules:id,criteria_transaction_id,rule_id,rule_name,actual_value,is_pass',
+                'details.detailCriteria.stepValues:id,criteria_transaction_id,order,step_code,variable_code,variable_name',
+                'details.detailCriteria.stepValues.inputValues:id,assessment_step_values_id,variable_name,variable_code,order,type_data,value',
+                'status:id,code,name',
                 'information',
-                'information.assessmentCode',
-                'information.technicalInformation',
-                'information.picInformations',
-                'information.woPsbInformation',
-                'information.stepValues',
-                'logsNewest.byUser',
+                'information.assessmentCode:id,code',
+                'information.technicalInformation:id,assessment_information_id,splitter',
+                'information.picInformations:id,assessment_information_id,full_name,is_primary',
+                'information.woPsbInformation:id,assessment_information_id,team_name,sales_distance,technician_distance,dropcore',
+                'information.stepValues:id,assessment_information_id,step_id,step_code,step_name,order_number,updated_at',
+                'logsNewest:id,assessment_transaction_id,changed_by,created_at',
+                'logsNewest.byUser:id,name',
             ])
-
             ->first();
     }
+
+    /* =========================================================
+     *  SIMPLE CRUD (tanpa logika bisnis)
+     * ========================================================= */
 
     public function showStatuses()
     {
@@ -301,144 +207,147 @@ class ValidationWoRepository implements ValidationWoInterface
 
     public function updateValidasiWo(array $data, string $id)
     {
-        if ($id) {
-            $transaction = AssessmentTransaction::find($id);
-            if ($transaction) {
-                $transaction->update($data);
-                return $transaction;
-            }
+        if (!$id) {
+            return null;
+        }
+
+        $transaction = AssessmentTransaction::find($id);
+        if ($transaction) {
+            $transaction->update($data);
+            return $transaction;
         }
         return null;
     }
 
-    public function showAssessmentWo(string $id)
+    public function findAssessmentTransaction(string $id)
     {
-        // Inisialisasi model dan tabel
-        $baseModel = new AssessmentTransactionDetail;
-        $baseTable = $baseModel->getTable();
-
-        // Query dasar mt_component dengan where clause
-        $query = $baseModel->newQuery()
-            ->addSelect("{$baseTable}.*");
-
-        $query->where("{$baseTable}.id", $id);
-
-        return $query->get();
+        return AssessmentTransaction::find($id);
     }
 
     public function upsertAssessmentWo(array $data, ?string $id)
     {
-        return AssessmentTransactionDetail::updateOrCreate(
-            ['id' => $id],
-            $data,
-        );
-    }
-
-    public function showAssessmentDetailCriteriaWo(string $id)
-    {
-        // Inisialisasi model dan tabel
-        $baseModel = new AssessmentTransactionDetailCriteria;
-        $baseTable = $baseModel->getTable();
-
-        // Query dasar mt_component dengan where clause
-        $query = $baseModel->newQuery()
-            ->addSelect("{$baseTable}.*");
-
-        $query->where("{$baseTable}.id", $id);
-
-        return $query->get();
+        return AssessmentTransactionDetail::updateOrCreate(['id' => $id], $data);
     }
 
     public function upsertAssessmentDetailCriteriaWo(array $data, ?string $id)
     {
-        return AssessmentTransactionDetailCriteria::updateOrCreate(
-            ['id' => $id],
-            $data,
-        );
-    }
-
-    public function showAssessmentCriteriaRuleWo(string $id)
-    {
-        // Inisialisasi model dan tabel
-        $baseModel = new AssessmentTransactionDetailRule;
-        $baseTable = $baseModel->getTable();
-
-        // Query dasar mt_component dengan where clause
-        $query = $baseModel->newQuery()
-            ->addSelect("{$baseTable}.*");
-
-        $query->where("{$baseTable}.id", $id);
-
-        return $query->get();
-    }
-
-    public function upsertAssessmentCriteriaRuleWo(array $data, ?string $id)
-    {
-        return AssessmentTransactionDetailRule::updateOrCreate(
-            ['id' => $id],
-            $data,
-        );
-    }
-
-    public function showAssessmentCriteriaStepWo(string $id)
-    {
-        // Inisialisasi model dan tabel
-        $baseModel = new AssessmentTransactionStepValue;
-        $baseTable = $baseModel->getTable();
-
-        // Query dasar mt_component dengan where clause
-        $query = $baseModel->newQuery()
-            ->addSelect("{$baseTable}.*");
-
-        $query->where("{$baseTable}.id", $id);
-
-        return $query->get();
-    }
-
-    public function upsertAssessmentCriteriaStepWo(array $data, ?string $id)
-    {
-        return AssessmentTransactionStepValue::updateOrCreate(
-            ['id' => $id],
-            $data,
-        );
-    }
-
-    public function showAssessmentCriteriaStepValueWo(string $id)
-    {
-        // Inisialisasi model dan tabel
-        $baseModel = new StepInputValue;
-        $baseTable = $baseModel->getTable();
-
-        // Query dasar mt_component dengan where clause
-        $query = $baseModel->newQuery()
-            ->addSelect("{$baseTable}.*");
-
-        $query->where("{$baseTable}.id", $id);
-
-        return $query->get();
-    }
-
-    public function upsertAssessmentCriteriaStepValueWo(array $data, ?string $id)
-    {
-        return StepInputValue::updateOrCreate(
-            ['id' => $id],
-            $data,
-        );
+        return AssessmentTransactionDetailCriteria::updateOrCreate(['id' => $id], $data);
     }
 
     public function upsertLogAssessmentTransactional(array $data, ?string $id)
     {
-        return AssessmentTransactionLog::updateOrCreate(
-            ['id' => $id],
-            $data,
-        );
+        return AssessmentTransactionLog::updateOrCreate(['id' => $id], $data);
     }
+
+    public function getResultStatuses()
+    {
+        return Cache::remember('assessment_results', 300, function () {
+            return AssessmentResult::get();
+        });
+    }
+
+    /* =========================================================
+     *  BATCH PERSIST (data access murni, TANPA generate UUID)
+     *  → UUID sudah di-generate di Service
+     * ========================================================= */
+
+    public function insertBatchAssessmentDetailRules(array $rows): void
+    {
+        if (empty($rows)) {
+            return;
+        }
+
+        foreach (array_chunk($rows, 500) as $chunk) {
+            AssessmentTransactionDetailRule::insert($chunk);
+        }
+    }
+
+    public function updateBatchAssessmentDetailRules(array $rows): void
+    {
+        if (empty($rows)) {
+            return;
+        }
+
+        foreach (array_chunk($rows, 500) as $chunk) {
+            $updateColumns = array_keys((array) $chunk[0]);
+            $updateColumns = array_values(array_diff($updateColumns, ['id', 'created_at']));
+            AssessmentTransactionDetailRule::upsert($chunk, ['id'], $updateColumns);
+        }
+    }
+
+    public function insertBatchAssessmentSteps(array $rows): void
+    {
+        if (empty($rows)) {
+            return;
+        }
+
+        foreach (array_chunk($rows, 500) as $chunk) {
+            AssessmentTransactionStepValue::insert($chunk);
+        }
+    }
+
+    public function updateBatchAssessmentSteps(array $rows): void
+    {
+        if (empty($rows)) {
+            return;
+        }
+
+        foreach (array_chunk($rows, 500) as $chunk) {
+            $updateColumns = array_keys((array) $chunk[0]);
+            $updateColumns = array_values(array_diff($updateColumns, ['id', 'created_at']));
+            AssessmentTransactionStepValue::upsert($chunk, ['id'], $updateColumns);
+        }
+    }
+
+    public function insertBatchStepInputValues(array $rows): void
+    {
+        if (empty($rows)) {
+            return;
+        }
+
+        foreach (array_chunk($rows, 500) as $chunk) {
+            StepInputValue::insert($chunk);
+        }
+    }
+
+    public function updateBatchStepInputValues(array $rows): void
+    {
+        if (empty($rows)) {
+            return;
+        }
+
+        foreach (array_chunk($rows, 500) as $chunk) {
+            $updateColumns = array_keys((array) $chunk[0]);
+            $updateColumns = array_values(array_diff($updateColumns, ['id', 'created_at']));
+            StepInputValue::upsert($chunk, ['id'], $updateColumns);
+        }
+    }
+
+    /* =========================================================
+     *  COUNTER & CACHE
+     * ========================================================= */
 
     public function countWoNotComplete()
     {
-        // Menghitung AssessmentTransaction yang status-nya tidak COMPLETE dengan join pada tabel status
-        return AssessmentTransaction::join('ref_assessment_statuses as status', 'tr_assessments.status_id', '=', 'status.id')
-            ->where('status.code', '!=', 'COMPLETE')
-            ->count();
+        return Cache::remember('wo_not_complete_count', 10, function () {
+            return AssessmentTransaction::join('ref_assessment_statuses as status', 'tr_assessments.status_id', '=', 'status.id')
+                ->where('status.code', '!=', 'COMPLETE')
+                ->count();
+        });
+    }
+
+    public function getTotalCategoryAssessmentGrouped()
+    {
+        return Cache::remember('total_category_assessment_grouped', 60, function () {
+            return AssessmentCriteria::select('assessment_id', 'assessment_category_id')
+                ->groupBy('assessment_id', 'assessment_category_id')
+                ->get()
+                ->count();
+        });
+    }
+
+    public function forgetWoNotCompleteCache(): void
+    {
+        Cache::forget('wo_not_complete_count');
     }
 }

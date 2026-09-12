@@ -35,34 +35,6 @@ class ValidationController extends BaseController
         }
     }
 
-    public function listBranch()
-    {
-        try {
-            $data = [
-                [
-                    "id" => 1,
-                    "branch_name" => "Temas",
-                    "kode_branch" => "G",
-                    "address" => "Jl. Dewi Sartika I No.13, Temas, Kec. Batu, Kota Batu, Jawa Timur 65315",
-                    "regional" => "Batu",
-                    "company_name" => "GriyaNet"
-                ],
-                [
-                    "id" => 7,
-                    "branch_name" => "Pasuruan Selatan",
-                    "kode_branch" => "PS",
-                    "address" => "Jl. Panglima Sudirman No.90, Pasuruan, Jawa Timur",
-                    "regional" => "Pasuruan",
-                    "company_name" => "Dasarata"
-                ]
-            ];
-
-            return $this->successResponse($data, 'Berhasil mengambil data validasi WO');
-        } catch (\Throwable $th) {
-            return api()->handle($th);
-        }
-    }
-
     public function show(string $id)
     {
         try {

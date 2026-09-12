@@ -9,6 +9,7 @@ use App\Http\Resources\Ref\CalculationOperationResource;
 use App\Http\Resources\Ref\CriteriaTypeResource;
 use App\Models\Ref\CalculationOperation;
 use App\Models\Ref\CriteriaType;
+use App\Services\Ref\RefService;
 use Knuckles\Scribe\Attributes\Group;
 use Knuckles\Scribe\Attributes\Response;
 
@@ -42,6 +43,35 @@ class RefController extends BaseController
                 CalculationOperationResource::collection($data),
                 'Berhasil mengambil data calculation operations'
             );
+        } catch (\Throwable $th) {
+            return api()->handle($th);
+        }
+    }
+
+    protected RefService $refService;
+
+    public function __construct(RefService $refService)
+    {
+        $this->refService = $refService;
+    }
+
+    public function listBranch()
+    {
+        try {
+            $data = $this->refService->getBranches();
+
+            return $this->successResponse($data, 'Berhasil mengambil data branch');
+        } catch (\Throwable $th) {
+            return api()->handle($th);
+        }
+    }
+
+    public function listKatim()
+    {
+        try {
+            $data = $this->refService->getKatims();
+
+            return $this->successResponse($data, 'Berhasil mengambil data katim');
         } catch (\Throwable $th) {
             return api()->handle($th);
         }

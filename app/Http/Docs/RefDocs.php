@@ -53,4 +53,82 @@ class RefDocs
             ]
         }
         JSON;
+
+    public const BRANCHES_SUCCESS = <<<'JSON'
+        {
+            "meta": {
+                "status": 200,
+                "message": "Berhasil mengambil data branch"
+            },
+            "data": [
+                {
+                "id": 1,
+                "branch_name": "Temas",
+                "kode_branch": "G",
+                "address": "Jl. Dewi Sartika I No.13, Temas, Kec. Batu, Kota Batu, Jawa Timur 65315",
+                "regional": "Batu",
+                "company_name": "GriyaNet"
+                },
+                {
+                "id": 7,
+                "branch_name": "Pasuruan Selatan",
+                "kode_branch": "PS",
+                "address": "Jl. Panglima Sudirman No.90, Pasuruan, Jawa Timur",
+                "regional": "Pasuruan",
+                "company_name": "Dasarata"
+                }
+            ]
+        }
+        JSON;
+
+    public const KATIMS_SUCCESS = <<<'JSON'
+        {
+            "meta": {
+                "status": 200,
+                "message": "Berhasil mengambil data katim"
+            },
+            "data": [
+                {
+                "id": 1,
+                "nama_team": "Gajah",
+                "kategori_team": "PSB",
+                "leader_nip": 108022513,
+                "leader_name": "Andi",
+                "is_active": 1
+                },
+                {
+                "id": 2,
+                "nama_team": "Ikan",
+                "kategori_team": "PSB",
+                "leader_nip": 108022514,
+                "leader_name": "Bima",
+                "is_active": 1
+                },
+                {
+                "id": 3,
+                "nama_team": "Tapir",
+                "kategori_team": "PSB",
+                "leader_nip": 108022515,
+                "leader_name": "Putra",
+                "is_active": 1
+                },
+                {
+                "id": 4,
+                "nama_team": "Rusa",
+                "kategori_team": "PSB",
+                "leader_nip": 108022513,
+                "leader_name": "Damar",
+                "is_active": 1
+                },
+                {
+                "id": 5,
+                "nama_team": "Macan",
+                "kategori_team": "PSB",
+                "leader_nip": 108022517,
+                "leader_name": "Gilang",
+                "is_active": 0
+                }
+            ]
+        }
+        JSON;
 }

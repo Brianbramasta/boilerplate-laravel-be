@@ -2,6 +2,7 @@
 
 namespace App\Models\AssessmentPSB;
 
+use App\Models\Concerns\LogsAssessmentDataChanges;
 use App\Models\Master\Assessment;
 use App\Models\Ref\AssessmentCode;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AssessmentTransactionDetail extends Model
 {
-    use HasUuids, SoftDeletes;
+    use HasUuids, SoftDeletes, LogsAssessmentDataChanges;
 
     protected $table = 'tr_assessment_details';
 

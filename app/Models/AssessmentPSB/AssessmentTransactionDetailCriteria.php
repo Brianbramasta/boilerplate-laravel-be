@@ -2,6 +2,7 @@
 
 namespace App\Models\AssessmentPSB;
 
+use App\Models\Concerns\LogsAssessmentDataChanges;
 use App\Models\Master\AssessmentCategory;
 use App\Models\Master\AssessmentCriteria;
 use App\Models\Ref\CalculationOperation;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AssessmentTransactionDetailCriteria extends Model
 {
-    use HasUuids, SoftDeletes;
+    use HasUuids, SoftDeletes, LogsAssessmentDataChanges;
 
     protected $table = 'tr_assessment_detail_criteria';
 

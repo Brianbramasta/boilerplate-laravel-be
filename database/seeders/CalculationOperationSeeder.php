@@ -12,6 +12,7 @@ class CalculationOperationSeeder extends Seeder
         $operations = [
             ['code' => 'ADDITION', 'symbol' => '+', 'name' => 'Penambahan'],
             ['code' => 'SUBTRACTION', 'symbol' => '-', 'name' => 'Pengurangan'],
+            ['code' => 'SUBTRACTION_ABSOLUTE', 'symbol' => '-', 'name' => 'Pengurangan Absolut'],
         ];
 
         foreach ($operations as $operation) {

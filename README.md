@@ -46,6 +46,13 @@ Langkah-langkah:
    docker compose exec app php artisan migrate --force
    ```
 
+3. (Opsional) Jika ingin menjalankan Laravel Reverb secara manual di dalam container, bisa gunakan perintah:
+   
+   ```bash
+   docker compose exec app php artisan reverb:start
+   ```
+   Atau, untuk deployment/production, disarankan menjalankan Reverb lewat Supervisor (lihat petunjuk lengkap di `install-reverb-server.md`).
+
 Akses aplikasi:
 - `http://localhost:8001`
 
@@ -72,6 +79,14 @@ Akses aplikasi:
    php artisan serve
    ```
 
+4. (Opsional) Menjalankan Laravel Reverb secara manual:
+
+   ```
+   php artisan reverb:start
+   ```
+
+   Atau, untuk production/deployment, gunakan Supervisor (lihat `install-reverb-server.md`).
+
 ## Konfigurasi
 
 ### Database (Docker)
@@ -88,6 +103,27 @@ DB_PASSWORD=123
 
 ### Database (Non-Docker)
 Sesuaikan `.env` dengan MySQL lokal kamu (biasanya `DB_HOST=127.0.0.1` dan `DB_PORT=3306`).
+
+### Menjalankan Reverb (Websocket Backend)
+Untuk fitur websocket (Laravel Reverb), pastikan environment Reverb sudah dikonfigurasi di file `.env` seperti berikut:
+
+```env
+BROADCAST_CONNECTION=reverb
+
+REVERB_APP_ID=xxx
+REVERB_APP_KEY=xxx
+REVERB_APP_SECRET=xxx
+REVERB_HOST=127.0.0.1
+REVERB_PORT=8080
+REVERB_SCHEME=http
+
+VITE_REVERB_APP_KEY="${REVERB_APP_KEY}"
+VITE_REVERB_HOST="${REVERB_HOST}"
+VITE_REVERB_PORT="${REVERB_PORT}"
+VITE_REVERB_SCHEME="${REVERB_SCHEME}"
+```
+
+Untuk panduan lebih lengkap setup & konfigurasi Reverb via Supervisor/NGINX di server, baca file [install-reverb-server.md](install-reverb-server.md).
 
 ## Endpoint Auth
 

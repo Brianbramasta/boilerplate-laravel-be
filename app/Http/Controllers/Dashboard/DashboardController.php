@@ -4,9 +4,16 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\BaseController;
+use App\Http\Docs\AuthDocs;
+use App\Http\Docs\DashboardDocs;
 use App\Http\Requests\Dashboard\DashboardRequest;
 use App\Services\Dashboard\DashboardService;
+use Knuckles\Scribe\Attributes\Group;
+use Knuckles\Scribe\Attributes\QueryParam;
+use Knuckles\Scribe\Attributes\Response;
+use Knuckles\Scribe\Attributes\Endpoint;
 
+#[Group('Dashboard', 'Endpoint untuk kebutuhan dashboard')]
 class DashboardController extends BaseController
 {
     public function __construct(protected DashboardService $dashboardService) {}
@@ -14,6 +21,12 @@ class DashboardController extends BaseController
     /**
      * Get cluster work order data
      */
+    #[Endpoint('Get cluster work order data')]
+    #[QueryParam('start_date', 'string', 'Tanggal awal', required: false, example: '2025-01-01')]
+    #[QueryParam('end_date', 'string', 'Tanggal akhir', required: false, example: '2025-01-31')]
+    #[QueryParam('branch_id', 'string', 'ID Branch', required: false, example: 'BR-001')]
+    #[Response(DashboardDocs::CLUSTER_WORK_ORDER, status: 200, description: 'Berhasil')]
+    #[Response(AuthDocs::UNAUTHORIZED, status: 401, description: 'Token tidak dikirim, tidak valid, atau sudah expired')]
     public function clusterWorkOrder(DashboardRequest $request)
     {
         try {
@@ -32,6 +45,12 @@ class DashboardController extends BaseController
     /**
      * Get cluster history data
      */
+    #[Endpoint('Get cluster history data')]
+    #[QueryParam('start_date', 'string', 'Tanggal awal', required: false, example: '2025-01-01')]
+    #[QueryParam('end_date', 'string', 'Tanggal akhir', required: false, example: '2025-01-31')]
+    #[QueryParam('branch_id', 'string', 'ID Branch', required: false, example: 'BR-001')]
+    #[Response(DashboardDocs::CLUSTER_HISTORY, status: 200, description: 'Berhasil')]
+    #[Response(AuthDocs::UNAUTHORIZED, status: 401, description: 'Token tidak dikirim, tidak valid, atau sudah expired')]
     public function clusterHistory(DashboardRequest $request)
     {
         try {
@@ -50,6 +69,12 @@ class DashboardController extends BaseController
     /**
      * Get dashboard summary
      */
+    #[Endpoint('Get dashboard summary')]
+    #[QueryParam('start_date', 'string', 'Tanggal awal', required: false, example: '2025-01-01')]
+    #[QueryParam('end_date', 'string', 'Tanggal akhir', required: false, example: '2025-01-31')]
+    #[QueryParam('branch_id', 'string', 'ID Branch', required: false, example: 'BR-001')]
+    #[Response(DashboardDocs::SUMMARY, status: 200, description: 'Berhasil')]
+    #[Response(AuthDocs::UNAUTHORIZED, status: 401, description: 'Token tidak dikirim, tidak valid, atau sudah expired')]
     public function summary(DashboardRequest $request)
     {
         try {
@@ -75,6 +100,12 @@ class DashboardController extends BaseController
     /**
      * Get rata-rata skor QC matrix sesuai gambar
      */
+    #[Endpoint('Get rata-rata skor QC matrix')]
+    #[QueryParam('start_date', 'string', 'Tanggal awal', required: false, example: '2025-01-01')]
+    #[QueryParam('end_date', 'string', 'Tanggal akhir', required: false, example: '2025-01-31')]
+    #[QueryParam('branch_id', 'string', 'ID Branch', required: false, example: 'BR-001')]
+    #[Response(DashboardDocs::QC_AVERAGE_MATRIX, status: 200, description: 'Berhasil')]
+    #[Response(AuthDocs::UNAUTHORIZED, status: 401, description: 'Token tidak dikirim, tidak valid, atau sudah expired')]
     public function qcAverageMatrix(DashboardRequest $request)
     {
         try {
@@ -93,6 +124,12 @@ class DashboardController extends BaseController
     /**
      * Get ranking Katim/Tim
      */
+    #[Endpoint('Get ranking Katim/Tim')]
+    #[QueryParam('start_date', 'string', 'Tanggal awal', required: false, example: '2025-01-01')]
+    #[QueryParam('end_date', 'string', 'Tanggal akhir', required: false, example: '2025-01-31')]
+    #[QueryParam('branch_id', 'string', 'ID Branch', required: false, example: 'BR-001')]
+    #[Response(DashboardDocs::RANKING_KATIM, status: 200, description: 'Berhasil')]
+    #[Response(AuthDocs::UNAUTHORIZED, status: 401, description: 'Token tidak dikirim, tidak valid, atau sudah expired')]
     public function rankingKatim(DashboardRequest $request)
     {
         try {
@@ -111,6 +148,11 @@ class DashboardController extends BaseController
     /**
      * Get ranking Branch
      */
+    #[Endpoint('Get ranking Branch')]
+    #[QueryParam('start_date', 'string', 'Tanggal awal', required: false, example: '2025-01-01')]
+    #[QueryParam('end_date', 'string', 'Tanggal akhir', required: false, example: '2025-01-31')]
+    #[Response(DashboardDocs::RANKING_BRANCH, status: 200, description: 'Berhasil')]
+    #[Response(AuthDocs::UNAUTHORIZED, status: 401, description: 'Token tidak dikirim, tidak valid, atau sudah expired')]
     public function rankingBranch(DashboardRequest $request)
     {
         try {
@@ -128,6 +170,12 @@ class DashboardController extends BaseController
     /**
      * Get top poin standar abnormal
      */
+    #[Endpoint('Get top poin standar abnormal')]
+    #[QueryParam('start_date', 'string', 'Tanggal awal', required: false, example: '2025-01-01')]
+    #[QueryParam('end_date', 'string', 'Tanggal akhir', required: false, example: '2025-01-31')]
+    #[QueryParam('branch_id', 'string', 'ID Branch', required: false, example: 'BR-001')]
+    #[Response(DashboardDocs::TOP_ABNORMAL_RULES, status: 200, description: 'Berhasil')]
+    #[Response(AuthDocs::UNAUTHORIZED, status: 401, description: 'Token tidak dikirim, tidak valid, atau sudah expired')]
     public function topAbnormalRules(DashboardRequest $request)
     {
         try {

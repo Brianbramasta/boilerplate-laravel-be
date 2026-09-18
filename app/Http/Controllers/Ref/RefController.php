@@ -55,6 +55,8 @@ class RefController extends BaseController
         $this->refService = $refService;
     }
 
+    #[Response(RefDocs::BRANCHES_SUCCESS, status: 200, description: 'Berhasil mengambil data branch')]
+    #[Response(AuthDocs::UNAUTHORIZED, status: 401, description: 'Token tidak dikirim, tidak valid, atau sudah expired')]
     public function listBranch()
     {
         try {
@@ -66,6 +68,8 @@ class RefController extends BaseController
         }
     }
 
+    #[Response(RefDocs::KATIMS_SUCCESS, status: 200, description: 'Berhasil mengambil data katim')]
+    #[Response(AuthDocs::UNAUTHORIZED, status: 401, description: 'Token tidak dikirim, tidak valid, atau sudah expired')]
     public function listKatim()
     {
         try {

@@ -83,6 +83,10 @@ class ValidationWoRepository implements ValidationWoInterface
             if ($hasStatus) {
                 $query->where('rsr.code', $status);
             }
+
+            if (!empty($data['status_code']) && is_array($data['status_code'])) {
+                $query->whereIn('rs.code', $data['status_code']);
+            }
         } else {
             $query->where('rs.code', '!=', 'COMPLETE');
 

@@ -95,6 +95,10 @@ class ValidationWoRepository implements ValidationWoInterface
             }
         }
 
+        if (!empty($data['status_code']) && is_array($data['status_code'])) {
+            $query->whereIn('rs.code', $data['status_code']);
+        }
+
         if (!empty($data['branch'])) {
             $query->where('ai.branch_id', $data['branch']);
         }

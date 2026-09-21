@@ -110,6 +110,7 @@ class ValidationWoService
                         $formattedItem['obtained_score'] = $detailCriteria->obtained_score ?? 0;
                         $formattedItem['calculated_value'] = $detailCriteria->calculated_value ?? null;
                         $formattedItem['description'] = $detailCriteria->description ?? null;
+                        $formattedItem['score'] =  $detailCriteria->max_score ?? 0;;
 
                         // Rules
                         if (isset($formattedItem['rules'])) {
@@ -198,6 +199,7 @@ class ValidationWoService
             'status_by' => $transaction->logsNewest->byUser->name ?? null,
             'status_at' => $transaction->logsNewest->created_at ?? null,
             'newest' => $details->isEmpty(),
+            'read_only' => $transaction->logsNewest->changed_by !== auth()->id() && $transaction->status->code == 'IN_PROGRESS',
             'assessments' => $detailFormatted,
         ];
     }

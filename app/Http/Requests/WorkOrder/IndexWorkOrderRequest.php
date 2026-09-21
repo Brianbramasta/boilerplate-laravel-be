@@ -20,6 +20,8 @@ class IndexWorkOrderRequest extends BaseRequest
             'search' => 'nullable|string|max:255',
             'is_complete' => 'nullable|boolean',
             'status' => 'nullable|string|max:255',
+            'status_code' => 'nullable|array',
+            'status_code.*' => 'nullable|string|max:255',
             'branch' => 'nullable|string|max:255',
             'katim' => 'nullable|string|max:255',
             'sort_by' => 'nullable|string|max:100',

@@ -296,10 +296,10 @@ class PsbAssessmentRepository implements PsbAssessmentInterface
                 throw new HttpException(422, "Komponen '{$slot['variable_key']}' tidak ditemukan pada step {$step->code}.");
             }
 
-            if ($isCalculate && !in_array($variable['type_data'] ?? null, ['number', 'timestamp'], true)) {
-                $type = $variable['type_data'] ?? 'tidak diketahui';
-                throw new HttpException(422, "Komponen '{$slot['variable_key']}' bertipe {$type}, tidak dapat dikalkulasi (hanya number/timestamp).");
-            }
+            // if ($isCalculate && !in_array($variable['type_data'] ?? null, ['number', 'timestamp'], true)) {
+            //     $type = $variable['type_data'] ?? 'tidak diketahui';
+            //     throw new HttpException(422, "Komponen '{$slot['variable_key']}' bertipe {$type}, tidak dapat dikalkulasi (hanya number/timestamp).");
+            // }
 
             $resolved[] = ['step' => $step, 'variable' => $variable];
         }

@@ -1,0 +1,525 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Auth API - Profil & General",
+    "description": "API endpoints for authentication including login, profile retrieval, and logout",
+    "version": "1.0.0",
+    "contact": {
+      "name": "API Support"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "Local Development Server"
+    }
+  ],
+  "paths": {
+    "/api/v1/auth/login": {
+      "post": {
+        "summary": "Login",
+        "description": "Authenticate user and obtain JWT token",
+        "operationId": "login",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              },
+              "example": {
+                "email": "employee@dasaria.com",
+                "password": "password123"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                },
+                "examples": {
+                  "success": {
+                    "value": {
+                      "meta": {
+                        "status": 200,
+                        "message": "Login berhasil"
+                      },
+                      "data": {
+                        "token": "1|LaravelSanctumTokenExample...",
+                        "user": {
+                          "id": 1,
+                          "name": "John Doe",
+                          "email": "employee@dasaria.com",
+                          "role": "employee"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validasi gagal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                },
+                "examples": {
+                  "validation_error": {
+                    "value": {
+                      "meta": {
+                        "status": 422,
+                        "message": "Validasi gagal"
+                      },
+                      "data": {
+                        "email": ["Format email tidak valid.", "Email wajib diisi."],
+                        "password": ["Password wajib diisi."]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Terlalu banyak percobaan login",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "meta": {
+                    "status": 429,
+                    "message": "Terlalu banyak percobaan login. Silakan coba lagi dalam 60 detik."
+                  },
+                  "data": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error server",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Kredensial salah",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                },
+                "example": {
+                  "meta": {
+                    "status": 401,
+                    "message": "Email atau password salah"
+                  },
+                  "data": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "summary": "Get Profile",
+        "description": "Retrieve authenticated user profile information",
+        "operationId": "getProfile",
+        "tags": ["Auth"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profil berhasil diambil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                },
+                "example": {
+                  "meta": {
+                    "status": 200,
+                    "message": "Profil berhasil diambil"
+                  },
+                  "data": {
+                    "id": 1,
+                    "name": "John Doe",
+                    "email": "employee@dasaria.com",
+                    "role": "employee",
+                    "manager_id": 5,
+                    "created_at": "2026-09-10T10:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token tidak valid atau tidak ditemukan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                },
+                "example": {
+                  "meta": {
+                    "status": 401,
+                    "message": "Unauthenticated. Token tidak valid atau tidak ditemukan."
+                  },
+                  "data": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error server",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "summary": "Logout",
+        "description": "Invalidate current JWT token",
+        "operationId": "logout",
+        "tags": ["Auth"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Logout berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoutResponse"
+                },
+                "example": {
+                  "meta": {
+                    "status": 200,
+                    "message": "Logout berhasil"
+                  },
+                  "data": null
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesi tidak ditemukan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                },
+                "example": {
+                  "meta": {
+                    "status": 401,
+                    "message": "Unauthenticated. Sesi tidak ditemukan."
+                  },
+                  "data": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error server",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "employee@dasaria.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "password123"
+          }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "integer",
+                "example": 200
+              },
+              "message": {
+                "type": "string",
+                "example": "Login berhasil"
+              }
+            }
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "token": {
+                "type": "string",
+                "description": "JWT token for authentication",
+                "example": "1|LaravelSanctumTokenExample..."
+              },
+              "user": {
+                "$ref": "#/components/schemas/User"
+              }
+            }
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "example": "John Doe"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "employee@dasaria.com"
+          },
+          "role": {
+            "type": "string",
+            "example": "employee"
+          }
+        }
+      },
+      "MeResponse": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "integer",
+                "example": 200
+              },
+              "message": {
+                "type": "string",
+                "example": "Profil berhasil diambil"
+              }
+            }
+          },
+          "data": {
+            "$ref": "#/components/schemas/MeUserData"
+          }
+        }
+      },
+      "MeUserData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "example": "John Doe"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "employee@dasaria.com"
+          },
+          "role": {
+            "type": "string",
+            "example": "employee"
+          },
+          "manager_id": {
+            "type": "integer",
+            "nullable": true,
+            "example": 5
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-09-10T10:00:00Z"
+          }
+        }
+      },
+      "LogoutResponse": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "integer",
+                "example": 200
+              },
+              "message": {
+                "type": "string",
+                "example": "Logout berhasil"
+              }
+            }
+          },
+          "data": {
+            "type": "string",
+            "nullable": true,
+            "example": null
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "integer",
+                "example": 422
+              },
+              "message": {
+                "type": "string",
+                "example": "Validasi gagal"
+              }
+            }
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "integer",
+                "example": 422
+              },
+              "message": {
+                "type": "string",
+                "example": "Validasi gagal"
+              }
+            }
+          },
+          "data": {
+            "type": "object"
+          }
+        }
+      },
+      "UnauthorizedResponse": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "integer",
+                "example": 401
+              },
+              "message": {
+                "type": "string",
+                "example": "Unauthenticated. Token tidak valid atau tidak ditemukan."
+              }
+            }
+          },
+          "data": {
+            "type": "string",
+            "nullable": true,
+            "example": null
+          }
+        }
+      },
+      "ServerErrorResponse": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "integer",
+                "example": 500
+              },
+              "message": {
+                "type": "string",
+                "example": "Terjadi kesalahan pada server."
+              }
+            }
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "error_detail": {
+                "type": "string",
+                "nullable": true,
+                "example": "Connection refused (opsional, disembunyikan di production)"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Endpoint autentikasi: login, profil, dan logout"
+    }
+  ]
+}

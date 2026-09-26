@@ -1,0 +1,105 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "HR Reporting & Monitoring API",
+    "description": "API endpoints untuk HR meliputi laporan analitik cuti dan monitoring pengajuan cuti",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {"url": "http://localhost:8000", "description": "Local Development Server"}
+  ],
+  "security": [{"bearerAuth": []}],
+  "paths": {
+    "/api/v1/hr/leave-requests": {
+      "get": {
+        "summary": "Daftar Semua Pengajuan Cuti",
+        "operationId": "getAllLeaveRequests",
+        "tags": ["HR"],
+        "parameters": [
+          {"name": "page", "in": "query", "schema": {"type": "integer", "default": 1}},
+          {"name": "per_page", "in": "query", "schema": {"type": "integer", "default": 10}},
+          {"name": "search", "in": "query", "schema": {"type": "string"}},
+          {"name": "status", "in": "query", "schema": {"type": "string"}},
+          {"name": "start_date", "in": "query", "schema": {"type": "string", "format": "date"}},
+          {"name": "end_date", "in": "query", "schema": {"type": "string", "format": "date"}},
+          {"name": "sort_by", "in": "query", "schema": {"type": "string"}},
+          {"name": "sort_dir", "in": "query", "schema": {"type": "string", "enum": ["asc", "desc"]}}
+        ],
+        "responses": {
+          "200": {"description": "Berhasil", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PaginatedLeaveRequestsHR"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UnauthorizedResponse"}}}},
+          "403": {"description": "Forbidden", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ForbiddenResponse"}}}}
+        }
+      }
+    },
+    "/api/v1/hr/leave-requests/{id}": {
+      "get": {
+        "summary": "Detail Pengajuan Cuti",
+        "operationId": "getLeaveRequestDetail",
+        "tags": ["HR"],
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "responses": {
+          "200": {"description": "Berhasil", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/LeaveRequestDetail"}}}},
+          "404": {"description": "Not Found", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/NotFoundResponse"}}}}
+        }
+      }
+    },
+    "/api/v1/hr/reports/leave-summary": {
+      "get": {
+        "summary": "Laporan Rekapitulasi Cuti",
+        "operationId": "getLeaveSummaryReport",
+        "tags": ["HR"],
+        "parameters": [
+          {"name": "start_date", "in": "query", "schema": {"type": "string", "format": "date"}},
+          {"name": "end_date", "in": "query", "schema": {"type": "string", "format": "date"}}
+        ],
+        "responses": {
+          "200": {"description": "Berhasil", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/LeaveSummaryReport"}}}},
+          "403": {"description": "Forbidden", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ForbiddenResponse"}}}}
+        }
+      }
+    },
+    "/api/v1/hr/reports/usage-by-type": {
+      "get": {
+        "summary": "Penggunaan Berdasarkan Jenis Cuti",
+        "operationId": "getUsageByTypeReport",
+        "tags": ["HR"],
+        "parameters": [{"name": "year", "in": "query", "schema": {"type": "integer", "default": 2026}}],
+        "responses": {
+          "200": {"description": "Berhasil", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UsageByTypeReport"}}}},
+          "403": {"description": "Forbidden", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ForbiddenResponse"}}}}
+        }
+      }
+    },
+    "/api/v1/hr/reports/usage-by-employee": {
+      "get": {
+        "summary": "Penggunaan Berdasarkan Karyawan",
+        "operationId": "getUsageByEmployeeReport",
+        "tags": ["HR"],
+        "parameters": [
+          {"name": "page", "in": "query", "schema": {"type": "integer"}},
+          {"name": "per_page", "in": "query", "schema": {"type": "integer"}},
+          {"name": "search", "in": "query", "schema": {"type": "string"}},
+          {"name": "year", "in": "query", "schema": {"type": "integer"}}
+        ],
+        "responses": {
+          "200": {"description": "Berhasil", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PaginatedEmployeeUsage"}}}},
+          "403": {"description": "Forbidden", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ForbiddenResponse"}}}}
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {"bearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}},
+    "schemas": {"PaginatedLeaveRequestsHR": {"type": "object", "properties": {"meta": {"type": "object"}, "data": {"type": "object", "properties": {"data": {"type": "array", "items": {"$ref": "#/components/schemas/LeaveRequestHRItem"}}, "current_page": {"type": "integer"}, "per_page": {"type": "integer"}, "to": {"type": "integer"}, "total": {"type": "integer"}}}}},
+      "LeaveRequestHRItem": {"type": "object", "properties": {"id": {"type": "integer"}, "employee_name": {"type": "string"}, "department": {"type": "string"}, "leave_type_name": {"type": "string"}, "start_date": {"type": "string", "format": "date"}, "end_date": {"type": "string", "format": "date"}, "status": {"type": "string"}, "created_at": {"type": "string", "format": "date-time"}}},
+      "LeaveRequestDetail": {"type": "object", "properties": {"id": {"type": "integer"}, "employee_name": {"type": "string"}, "leave_type_name": {"type": "string"}, "start_date": {"type": "string", "format": "date"}, "end_date": {"type": "string", "format": "date"}, "total_days": {"type": "integer"}, "reason": {"type": "string"}, "status": {"type": "string"}, "approval_histories": {"type": "array", "items": {"type": "object", "properties": {"actor_name": {"type": "string"}, "previous_status": {"type": "string"}, "next_status": {"type": "string"}, "notes": {"type": "string"}, "created_at": {"type": "string", "format": "date-time"}}}}}},
+      "LeaveSummaryReport": {"type": "object", "properties": {"meta": {"type": "object"}, "data": {"type": "object", "properties": {"period_start": {"type": "string"}, "period_end": {"type": "string"}, "total_requests": {"type": "integer"}, "total_approved": {"type": "integer"}, "total_rejected": {"type": "integer"}, "total_cancelled": {"type": "integer"}}}}},
+      "UsageByTypeReport": {"type": "object", "properties": {"meta": {"type": "object"}, "data": {"type": "array", "items": {"type": "object", "properties": {"leave_type_name": {"type": "string"}, "total_requests": {"type": "integer"}, "total_days_used": {"type": "integer"}}}}}},
+      "PaginatedEmployeeUsage": {"type": "object", "properties": {"meta": {"type": "object"}, "data": {"type": "object", "properties": {"data": {"type": "array", "items": {"type": "object", "properties": {"employee_id": {"type": "integer"}, "employee_name": {"type": "string"}, "department": {"type": "string"}, "total_requests": {"type": "integer"}, "total_days_used": {"type": "integer"}, "leave_details": {"type": "array", "items": {"type": "object", "properties": {"leave_type_name": {"type": "string"}, "days_used": {"type": "integer"}}}}}}, "current_page": {"type": "integer"}, "per_page": {"type": "integer"}, "to": {"type": "integer"}, "total": {"type": "integer"}}}}}},
+      "UnauthorizedResponse": {"type": "object", "properties": {"meta": {"type": "object"}, "data": {"type": ["string", "null"]}}},
+      "ForbiddenResponse": {"type": "object", "properties": {"meta": {"type": "object"}, "data": {"type": ["string", "null"]}}},
+      "NotFoundResponse": {"type": "object", "properties": {"meta": {"type": "object"}, "data": {"type": ["string", "null"]}}}}
+  },
+  "tags": [{"name": "HR", "description": "Modul HR Reporting & Monitoring"}]
+}

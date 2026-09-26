@@ -5,7 +5,6 @@ namespace App\Exceptions;
 use App\Http\Traits\ApiResponse;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Throwable;
@@ -20,9 +19,6 @@ class ApiExceptionHandler
             \Illuminate\Support\Facades\Log::error($e);
         }
 
-        $message = $e instanceof HttpException ? $e->getMessage() : 'Internal Server Error';
-        $code = $e instanceof HttpException ? $e->getStatusCode() : 500;
-
         if ($e instanceof ModelNotFoundException) {
             return $this->errorResponse('Resource not found', 404);
         }
@@ -36,6 +32,9 @@ class ApiExceptionHandler
         }
 
         if ($e instanceof HttpException) {
+            $code = $e->getStatusCode();
+            $message = $e->getMessage();
+
             if ($code === 401) {
                 return $this->unauthorizedResponse('Unauthenticated. Sesi tidak ditemukan.');
             }

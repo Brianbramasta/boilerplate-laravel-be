@@ -1,0 +1,75 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Persetujuan Approver API",
+    "description": "API endpoints untuk approver meninjau dan memberikan keputusan terhadap pengajuan cuti",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {"url": "http://localhost:8000", "description": "Local Development Server"}
+  ],
+  "security": [{"bearerAuth": []}],
+  "paths": {
+    "/api/v1/approvals/leave-requests": {
+      "get": {
+        "summary": "Daftar Pengajuan Cuti Bawahan",
+        "operationId": "getMyLeaveRequests",
+        "tags": ["Approver"],
+        "parameters": [
+          {"name": "page", "in": "query", "schema": {"type": "integer", "default": 1}},
+          {"name": "per_page", "in": "query", "schema": {"type": "integer", "default": 10}},
+          {"name": "status", "in": "query", "schema": {"type": "string"}}
+        ],
+        "responses": {
+          "200": {"description": "Berhasil", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PaginatedApprovals"}}}},
+          "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UnauthorizedResponse"}}}},
+          "403": {"description": "Forbidden", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ForbiddenResponse"}}}}
+        }
+      }
+    },
+    "/api/v1/approvals/leave-requests/{id}/approve": {
+      "patch": {
+        "summary": "Setujui Pengajuan Cuti",
+        "operationId": "approveLeaveRequest",
+        "tags": ["Approver"],
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "requestBody": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/ApproveRequest"}}}},
+        "responses": {
+          "200": {"description": "Berhasil", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ApproveResponse"}}}},
+          "400": {"description": "Bad Request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BadRequest"}}}},
+          "404": {"description": "Not Found", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/NotFoundResponse"}}}},
+          "403": {"description": "Forbidden", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ForbiddenResponse"}}}}
+        }
+      }
+    },
+    "/api/v1/approvals/leave-requests/{id}/reject": {
+      "patch": {
+        "summary": "Tolak Pengajuan Cuti",
+        "operationId": "rejectLeaveRequest",
+        "tags": ["Approver"],
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "integer"}}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/RejectRequest"}}}},
+        "responses": {
+          "200": {"description": "Berhasil", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/RejectResponse"}}}},
+          "400": {"description": "Bad Request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BadRequest"}}}},
+          "404": {"description": "Not Found", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/NotFoundResponse"}}}},
+          "403": {"description": "Forbidden", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ForbiddenResponse"}}}}
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {"bearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}},
+    "schemas": {"PaginatedApprovals": {"type": "object", "properties": {"meta": {"type": "object"}, "data": {"type": "object", "properties": {"data": {"type": "array", "items": {"$ref": "#/components/schemas/ApprovalsItem"}}, "current_page": {"type": "integer"}, "per_page": {"type": "integer"}, "to": {"type": "integer"}, "total": {"type": "integer"}}}}},
+      "ApprovalsItem": {"type": "object", "properties": {"id": {"type": "integer"}, "employee_name": {"type": "string"}, "leave_type_name": {"type": "string"}, "start_date": {"type": "string", "format": "date"}, "end_date": {"type": "string", "format": "date"}, "total_days": {"type": "integer"}, "reason": {"type": "string"}, "status": {"type": "string"}, "created_at": {"type": "string", "format": "date-time"}}},
+      "ApproveRequest": {"type": "object", "properties": {"notes": {"type": ["string", "null"]}}},
+      "ApproveResponse": {"type": "object", "properties": {"meta": {"type": "object"}, "data": {"type": "object", "properties": {"id": {"type": "integer"}, "status": {"type": "string"}}}}},
+      "RejectRequest": {"type": "object", "required": ["notes"], "properties": {"notes": {"type": "string"}}},
+      "RejectResponse": {"type": "object", "properties": {"meta": {"type": "object"}, "data": {"type": "object", "properties": {"id": {"type": "integer"}, "status": {"type": "string"}}}}},
+      "UnauthorizedResponse": {"type": "object", "properties": {"meta": {"type": "object"}, "data": {"type": ["string", "null"]}}},
+      "ForbiddenResponse": {"type": "object", "properties": {"meta": {"type": "object"}, "data": {"type": ["string", "null"]}}},
+      "NotFoundResponse": {"type": "object", "properties": {"meta": {"type": "object"}, "data": {"type": ["string", "null"]}}},
+      "BadRequest": {"type": "object", "properties": {"meta": {"type": "object"}, "data": {"type": ["string", "null"]}}}}
+  },
+  "tags": [{"name": "Approver", "description": "Persetujuan pengajuan cuti oleh approver"}]
+}

@@ -12,12 +12,16 @@ class User extends Authenticatable implements JWTSubject
 {
     use HasFactory, Notifiable;
 
+    protected $table = 'mt_users';
+
     protected $fillable = [
         'name',
         'email',
         'password',
         'role',
         'manager_id',
+        'created_by',
+        'updated_by',
     ];
 
     protected $hidden = [
@@ -25,12 +29,9 @@ class User extends Authenticatable implements JWTSubject
         'remember_token',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'password' => 'hashed',
-        ];
-    }
+    protected $casts = [
+        'password' => 'hashed',
+    ];
 
     public function getJWTIdentifier()
     {
@@ -40,5 +41,20 @@ class User extends Authenticatable implements JWTSubject
     public function getJWTCustomClaims()
     {
         return [];
+    }
+
+    public function role()
+    {
+        return $this->belongsTo(\App\Models\RolePermission\Role::class);
+    }
+
+    public function manager()
+    {
+        return $this->belongsTo(User::class, 'manager_id');
+    }
+
+    public function leaveRequests()
+    {
+        return $this->hasMany(\App\Models\Employee\LeaveRequest::class, 'user_id');
     }
 }

@@ -29,13 +29,8 @@ class AuthDocs
                 "message": "Validasi gagal"
             },
             "data": {
-                "email": [
-                    "Format email tidak valid.",
-                    "Email wajib diisi."
-                ],
-                "password": [
-                    "Password wajib diisi."
-                ]
+                "email": ["Format email tidak valid.", "Email wajib diisi."],
+                "password": ["Password wajib diisi."]
             }
         }
         JSON;
@@ -45,16 +40,6 @@ class AuthDocs
             "meta": {
                 "status": 401,
                 "message": "Email atau password salah"
-            },
-            "data": null
-        }
-        JSON;
-
-    public const LOGIN_RATE_LIMIT = <<<'JSON'
-        {
-            "meta": {
-                "status": 429,
-                "message": "Terlalu banyak percobaan login. Silakan coba lagi dalam 60 detik."
             },
             "data": null
         }
@@ -104,18 +89,6 @@ class AuthDocs
                 "message": "Unauthenticated. Sesi tidak ditemukan."
             },
             "data": null
-        }
-        JSON;
-
-    public const SERVER_ERROR = <<<'JSON'
-        {
-            "meta": {
-                "status": 500,
-                "message": "Terjadi kesalahan pada server."
-            },
-            "data": {
-                "error_detail": "Connection refused (opsional, disembunyikan di production)"
-            }
         }
         JSON;
 }

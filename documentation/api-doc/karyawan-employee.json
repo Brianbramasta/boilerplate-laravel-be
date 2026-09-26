@@ -1,0 +1,699 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Karyawan (Employee) API",
+    "description": "API endpoints untuk modul karyawan/employee meliputi jenis cuti, saldo cuti, dan pengajuan cuti",
+    "version": "1.0.0",
+    "contact": {
+      "name": "API Support"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "Local Development Server"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/v1/leave-types": {
+      "get": {
+        "summary": "Daftar Jenis Cuti",
+        "description": "Mendapatkan daftar jenis cuti yang tersedia",
+        "operationId": "getLeaveTypes",
+        "tags": ["Karyawan"],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Halaman yang ingin diakses",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "Jumlah data per halaman",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar jenis cuti berhasil diambil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedLeaveTypesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token tidak valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/my-leave-balances": {
+      "get": {
+        "summary": "Saldo Cuti Saya",
+        "description": "Mendapatkan saldo cuti yang dimiliki karyawan",
+        "operationId": "getMyLeaveBalances",
+        "tags": ["Karyawan"],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Halaman yang ingin diakses",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "Jumlah data per halaman",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saldo cuti berhasil diambil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedLeaveBalancesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token tidak valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/my-leave-requests": {
+      "get": {
+        "summary": "Daftar Pengajuan Cuti Saya",
+        "description": "Mendapatkan daftar pengajuan cuti milik karyawan yang login",
+        "operationId": "getMyLeaveRequests",
+        "tags": ["Karyawan"],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Halaman yang ingin diakses",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "Jumlah data per halaman",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar pengajuan cuti berhasil diambil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedLeaveRequestsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token tidak valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Buat Pengajuan Cuti",
+        "description": "Membuat pengajuan cuti baru dengan status SUBMITTED",
+        "operationId": "createLeaveRequest",
+        "tags": ["Karyawan"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLeaveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Pengajuan cuti berhasil disubmit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateLeaveRequestResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Saldo cuti tidak mencukupi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token tidak valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/my-leave-requests/{id}/cancel": {
+      "patch": {
+        "summary": "Batalkan Pengajuan Cuti",
+        "description": "Membatalkan pengajuan cuti yang statusnya SUBMITTED",
+        "operationId": "cancelLeaveRequest",
+        "tags": ["Karyawan"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID pengajuan cuti",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pengajuan cuti berhasil dibatalkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelLeaveRequestResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Pengajuan tidak dapat dibatalkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token tidak valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Data tidak ditemukan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "PaginatedLeaveTypesResponse": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "integer",
+                "example": 200
+              },
+              "message": {
+                "type": "string",
+                "example": "Daftar jenis cuti berhasil diambil"
+              }
+            }
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "current_page": {
+                "type": "integer",
+                "example": 1
+              },
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/LeaveType"
+                }
+              },
+              "per_page": {
+                "type": "integer",
+                "example": 10
+              },
+              "to": {
+                "type": "integer",
+                "example": 2
+              },
+              "total": {
+                "type": "integer",
+                "example": 2
+              }
+            }
+          }
+        }
+      },
+      "LeaveType": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "code": {
+            "type": "string",
+            "example": "ANNUAL"
+          },
+          "name": {
+            "type": "string",
+            "example": "Cuti Tahunan"
+          },
+          "is_deduct_balance": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "PaginatedLeaveBalancesResponse": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "integer",
+                "example": 200
+              },
+              "message": {
+                "type": "string",
+                "example": "Saldo cuti berhasil diambil"
+              }
+            }
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "current_page": {
+                "type": "integer",
+                "example": 1
+              },
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/LeaveBalance"
+                }
+              },
+              "per_page": {
+                "type": "integer",
+                "example": 10
+              },
+              "to": {
+                "type": "integer",
+                "example": 1
+              },
+              "total": {
+                "type": "integer",
+                "example": 1
+              }
+            }
+          }
+        }
+      },
+      "LeaveBalance": {
+        "type": "object",
+        "properties": {
+          "leave_type_id": {
+            "type": "integer",
+            "example": 1
+          },
+          "leave_type_name": {
+            "type": "string",
+            "example": "Cuti Tahunan"
+          },
+          "year": {
+            "type": "integer",
+            "example": 2026
+          },
+          "total_quota": {
+            "type": "integer",
+            "example": 12
+          },
+          "used_quota": {
+            "type": "integer",
+            "example": 2
+          },
+          "remaining_balance": {
+            "type": "integer",
+            "example": 10
+          }
+        }
+      },
+      "PaginatedLeaveRequestsResponse": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "integer",
+                "example": 200
+              },
+              "message": {
+                "type": "string",
+                "example": "Daftar pengajuan cuti berhasil diambil"
+              }
+            }
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "current_page": {
+                "type": "integer",
+                "example": 1
+              },
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/LeaveRequest"
+                }
+              },
+              "per_page": {
+                "type": "integer",
+                "example": 10
+              },
+              "to": {
+                "type": "integer",
+                "example": 2
+              },
+              "total": {
+                "type": "integer",
+                "example": 15
+              }
+            }
+          }
+        }
+      },
+      "LeaveRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 101
+          },
+          "leave_type_name": {
+            "type": "string",
+            "example": "Cuti Tahunan"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-10-10"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-10-12"
+          },
+          "total_days": {
+            "type": "integer",
+            "example": 3
+          },
+          "status": {
+            "type": "string",
+            "enum": ["SUBMITTED", "APPROVED", "REJECTED", "CANCELLED"],
+            "example": "APPROVED"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-09-01T10:00:00Z"
+          }
+        }
+      },
+      "CreateLeaveRequest": {
+        "type": "object",
+        "required": ["leave_type_id", "start_date", "end_date", "reason"],
+        "properties": {
+          "leave_type_id": {
+            "type": "integer",
+            "example": 1,
+            "description": "ID jenis cuti"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-10-10",
+            "description": "Tanggal mulai cuti"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-10-12",
+            "description": "Tanggal selesai cuti"
+          },
+          "reason": {
+            "type": "string",
+            "example": "Acara keluarga di luar kota",
+            "description": "Alasan cuti"
+          }
+        }
+      },
+      "CreateLeaveRequestResponse": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "integer",
+                "example": 201
+              },
+              "message": {
+                "type": "string",
+                "example": "Pengajuan cuti berhasil disubmit"
+              }
+            }
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "example": 102
+              },
+              "leave_type_id": {
+                "type": "integer",
+                "example": 1
+              },
+              "start_date": {
+                "type": "string",
+                "format": "date",
+                "example": "2026-10-10"
+              },
+              "end_date": {
+                "type": "string",
+                "format": "date",
+                "example": "2026-10-12"
+              },
+              "total_days": {
+                "type": "integer",
+                "example": 3
+              },
+              "reason": {
+                "type": "string",
+                "example": "Acara keluarga di luar kota"
+              },
+              "status": {
+                "type": "string",
+                "example": "SUBMITTED"
+              }
+            }
+          }
+        }
+      },
+      "CancelLeaveRequestResponse": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "integer",
+                "example": 200
+              },
+              "message": {
+                "type": "string",
+                "example": "Pengajuan cuti berhasil dibatalkan"
+              }
+            }
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "example": 102
+              },
+              "status": {
+                "type": "string",
+                "example": "CANCELLED"
+              }
+            }
+          }
+        }
+      },
+      "UnauthorizedResponse": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "integer",
+                "example": 401
+              },
+              "message": {
+                "type": "string",
+                "example": "Unauthenticated. Token tidak valid atau tidak ditemukan."
+              }
+            }
+          },
+          "data": {
+            "type": "string",
+            "nullable": true,
+            "example": null
+          }
+        }
+      },
+      "BadRequestResponse": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "integer",
+                "example": 400
+              },
+              "message": {
+                "type": "string",
+                "example": "Saldo cuti tidak mencukupi."
+              }
+            }
+          },
+          "data": {
+            "type": "string",
+            "nullable": true,
+            "example": null
+          }
+        }
+      },
+      "NotFoundResponse": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "integer",
+                "example": 404
+              },
+              "message": {
+                "type": "string",
+                "example": "Data pengajuan cuti tidak ditemukan."
+              }
+            }
+          },
+          "data": {
+            "type": "string",
+            "nullable": true,
+            "example": null
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Karyawan",
+      "description": "Endpoint untuk modul karyawan/employee"
+    }
+  ]
+}

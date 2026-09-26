@@ -3,63 +3,71 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class LoginTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const TEST_EMAIL = 'testuser@example.com';
-
-    public function test_user_can_login_with_valid_credentials(): void
+    public function test_login_success(): void
     {
-        User::factory()->create([
-            'email' => self::TEST_EMAIL,
-            'password' => bcrypt('12345678'),
+        $user = User::factory()->create([
+            'email' => 'employee@dasaria.com',
+            'password' => bcrypt('password123'),
         ]);
 
-        $payload = [
-            'email' => self::TEST_EMAIL,
-            'password' => '12345678',
-        ];
+        $response = $this->postJson('/api/v1/auth/login', [
+            'email' => 'employee@dasaria.com',
+            'password' => 'password123',
+        ]);
 
-        $response = $this->postJson('/api/auth/login', $payload);
-
-        $response->assertStatus(200);
-        $response->assertJsonStructure([
-            'data' => [
-                'user' => [
-                    'id',
-                    'name',
-                    'email',
-                    'created_at',
-                    'updated_at',
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'meta' => ['status', 'message'],
+                'data' => [
+                    'token',
+                    'user' => ['id', 'name', 'email', 'role']
+                ]
+            ])
+            ->assertJson([
+                'meta' => [
+                    'status' => 200,
+                    'message' => 'Login berhasil',
                 ],
-                'token',
-                'expires_in',
-            ],
-        ]);
+                'data' => [
+                    'user' => [
+                        'email' => 'employee@dasaria.com',
+                    ]
+                ]
+            ]);
     }
 
-    public function test_user_cannot_login_with_invalid_credentials(): void
+    public function test_login_validation_error(): void
     {
-        $payload = [
-            'email' => 'invalid@gmail.com',
-            'password' => 'invalidpassword',
-        ];
+        $response = $this->postJson('/api/v1/auth/login', []);
 
-        $response = $this->postJson('/api/auth/login', $payload);
+        $response->assertStatus(422)
+            ->assertJsonStructure([
+                'meta' => ['status', 'message'],
+                'errors' => ['email', 'password'],
+            ]);
+    }
 
-        $response->assertStatus(401);
-
-        $response->assertJsonStructure([
-            'meta' => [
-                'status',
-                'message',
-            ],
-            'data',
-            'errors',
+    public function test_login_invalid_credentials(): void
+    {
+        $response = $this->postJson('/api/v1/auth/login', [
+            'email' => 'nonexistent@example.com',
+            'password' => 'wrongpassword',
         ]);
+
+        $response->assertStatus(401)
+            ->assertJson([
+                'meta' => [
+                    'status' => 401,
+                    'message' => 'Email atau password salah',
+                ],
+                'data' => null,
+            ]);
     }
 }

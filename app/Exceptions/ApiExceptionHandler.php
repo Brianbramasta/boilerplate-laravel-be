@@ -3,16 +3,12 @@
 namespace App\Exceptions;
 
 use App\Http\Traits\ApiResponse;
-use Throwable;
-use BadMethodCallException;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Database\QueryException;
 use Illuminate\Auth\AuthenticationException;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
-use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use Throwable;
 
 class ApiExceptionHandler
 {
@@ -20,103 +16,48 @@ class ApiExceptionHandler
 
     public function handle(Throwable $e)
     {
-        // 🔥 Log hanya error penting (500)
         if ($this->shouldReport($e)) {
-            Log::error($e);
+            \Illuminate\Support\Facades\Log::error($e);
         }
 
-        return match (true) {
+        $message = $e instanceof HttpException ? $e->getMessage() : 'Internal Server Error';
+        $code = $e instanceof HttpException ? $e->getStatusCode() : 500;
 
-            $e instanceof ModelNotFoundException =>
-            $this->errorResponse('Resource not found', 404),
+        if ($e instanceof ModelNotFoundException) {
+            return $this->errorResponse('Resource not found', 404);
+        }
 
-            $e instanceof QueryException =>
-            $this->errorHandle(
-                config('app.debug')
-                    ? 'Database error: ' . $e->getMessage()
-                    : 'Database error',
-                500
-            ),
+        if ($e instanceof ValidationException) {
+            return $this->failResponse('Validasi gagal', 422, $e->errors());
+        }
 
-            $e instanceof MethodNotAllowedHttpException =>
-            $this->errorHandle('Method not allowed', 405),
+        if ($e instanceof AuthenticationException) {
+            return $this->unauthorizedResponse('Unauthenticated. Token tidak valid atau tidak ditemukan.');
+        }
 
-            $e instanceof AuthenticationException =>
-            $this->errorHandle('Unauthenticated', 401),
+        if ($e instanceof HttpException) {
+            if ($code === 401) {
+                return $this->unauthorizedResponse('Unauthenticated. Sesi tidak ditemukan.');
+            }
 
-            $e instanceof AuthorizationException =>
-            $this->errorHandle('This action is unauthorized.', 403),
+            if ($code === 429) {
+                return $this->tooManyRequestsResponse('Terlalu banyak percobaan login. Silakan coba lagi dalam 60 detik.');
+            }
 
-            $e instanceof ValidationException =>
-            $this->errorHandle(
-                collect($e->errors())->flatten()->first(),
-                422
-            ),
+            return $this->errorResponse($message, $code);
+        }
 
-            // penting: handle error dari service (422, 400, dll)
-            $e instanceof HttpException =>
-            $this->errorHandle(
-                $e->getMessage(),
-                $e->getStatusCode()
-            ),
-
-            $e instanceof BadMethodCallException =>
-            $this->handleBadMethod($e),
-
-            // fallback (500)
-            default =>
-            $this->errorResponse(
-                'Internal Server Error',
-                500,
-                config('app.debug') ? $e->getMessage() : null
-            )
-        };
+        return $this->errorResponse(
+            config('app.debug') ? $e->getMessage() : 'Terjadi kesalahan pada server.',
+            500,
+            config('app.debug') ? ['error_detail' => $e->getMessage()] : null
+        );
     }
 
-    /**
-     * Tentukan error mana yang perlu di-log
-     */
     private function shouldReport(Throwable $e): bool
     {
-        return match (true) {
-
-            // tidak perlu di-log (error user / bisnis)
-            $e instanceof ValidationException,
-            $e instanceof AuthenticationException,
-            $e instanceof AuthorizationException,
-            $e instanceof HttpException && $e->getStatusCode() < 500
-            => false,
-
-            // log error server
-            default => true,
-        };
-    }
-
-    /**
-     * Handle bad method exception
-     */
-    private function handleBadMethod(Throwable $e)
-    {
-        $message = $e->getMessage();
-
-        return match (true) {
-
-            str_contains($message, 'undefined relationship') =>
-            $this->errorHandle('Invalid relationship method.', 400),
-
-            str_contains($message, 'undefined method') =>
-            $this->errorHandle('Undefined method called.', 400),
-
-            default =>
-            $this->errorHandle('Bad method call.', 400),
-        };
-    }
-
-    /**
-     * Standard error response
-     */
-    private function errorHandle(string $message, int $code)
-    {
-        return $this->errorResponse($message, $code);
+        return !($e instanceof ValidationException
+            || $e instanceof AuthenticationException
+            || $e instanceof HttpException && $e->getStatusCode() < 500);
     }
 }

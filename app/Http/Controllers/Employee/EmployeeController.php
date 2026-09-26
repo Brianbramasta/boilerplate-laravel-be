@@ -10,10 +10,16 @@ use App\Http\Resources\Employee\LeaveRequestResource;
 use App\Models\Employee\LeaveBalance;
 use App\Models\Employee\LeaveRequest;
 use App\Models\Employee\LeaveType;
+use App\Services\Employee\EmployeeService;
 use Illuminate\Http\Request;
 
 class EmployeeController extends BaseController
 {
+    public function __construct(protected EmployeeService $employeeService)
+    {
+        //
+    }
+
     public function leaveTypes(Request $request)
     {
         $query = LeaveType::query();
@@ -86,9 +92,10 @@ class EmployeeController extends BaseController
 
     public function createLeaveRequest(CreateLeaveRequest $request)
     {
-        $data = $request->validated();
-
-        $leaveRequest = LeaveRequest::create($data);
+        $leaveRequest = $this->employeeService->createLeaveRequest(
+            $request->validated(),
+            auth()->id()
+        );
 
         return $this->successResponse(
             data: [

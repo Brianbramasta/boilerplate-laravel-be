@@ -16,10 +16,10 @@ class StoreUserRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'email', 'max:255', 'unique:mt_users,email'],
             'password' => ['required', 'confirmed', 'password'],
             'role' => ['required', 'in:employee,approver,hr,admin'],
-            'manager_id' => ['nullable', 'exists:users,id'],
+            'manager_id' => ['nullable', 'exists:mt_users,id'],
         ];
     }
 

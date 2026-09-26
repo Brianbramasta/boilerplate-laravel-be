@@ -17,10 +17,10 @@ class UpdateUserRequest extends FormRequest
 
         return [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'email' => ['sometimes', 'required', 'email', 'max:255', "unique:users,email,{$userId}"],
+            'email' => ['sometimes', 'required', 'email', 'max:255', "unique:mt_users,email,{$userId}"],
             'password' => ['nullable', 'confirmed', 'password'],
             'role' => ['sometimes', 'required', 'in:employee,approver,hr,admin'],
-            'manager_id' => ['nullable', 'exists:users,id'],
+            'manager_id' => ['nullable', 'exists:mt_users,id'],
         ];
     }
 }

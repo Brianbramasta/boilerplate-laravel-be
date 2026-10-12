@@ -44,7 +44,7 @@ class ApproverController extends BaseController
         return $this->successResponse(
             data: [
                 'current_page' => $requests->currentPage(),
-                'data' => $requests->items()->map(fn($r) => [
+                'data' => collect($requests->items())->map(fn($r) => [
                     'id' => $r->id,
                     'employee_name' => $r->user->name,
                     'leave_type_name' => $r->leaveType->name,

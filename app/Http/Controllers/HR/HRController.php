@@ -48,7 +48,7 @@ class HRController extends BaseController
         return $this->successResponse(
             data: [
                 'current_page' => $requests->currentPage(),
-                'data' => $requests->items()->map(fn($r) => [
+                'data' => collect($requests->items())->map(fn($r) => [
                     'id' => $r->id,
                     'employee_name' => $r->user->name,
                     'department' => 'Engineering',
@@ -172,7 +172,7 @@ class HRController extends BaseController
 
         $employees = $query->paginate($perPage, ['*'], 'page', $page);
 
-        $data = $employees->items()->map(fn($user) => [
+        $data = collect($employees->items())->map(fn($user) => [
             'employee_id' => $user->id,
             'employee_name' => $user->name,
             'department' => 'Engineering',

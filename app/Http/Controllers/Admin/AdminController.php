@@ -47,7 +47,7 @@ class AdminController extends BaseController
         return $this->successResponse(
             data: [
                 'current_page' => $users->currentPage(),
-                'data' => $users->items()->map(fn($u) => [
+                'data' => collect($users->items())->map(fn($u) => [
                     'id' => $u->id,
                     'name' => $u->name,
                     'email' => $u->email,

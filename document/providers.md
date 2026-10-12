@@ -191,4 +191,9 @@ class SomeServiceProvider extends ServiceProvider
 ## Navigasi Cepat ⟶
 - [[repositories]] - Class yang diregister di Provider
 - [[services]] - Service yang menggunakan Repository lewat DI
-- [[penjelasan-folder-http]] - Cara Controller menggunakan Service melalui Provider
+- [[http]] - Cara Controller menggunakan Service melalui Provider
+- [[interface]] - Kontrak yang di-binding di container
+- [[models]] - Model yang di-instansiasi oleh Repository
+- [[exceptions]] - Exception handler yang di-register
+- [[helper]] - Helper class yang mungkin di-bind di container
+- [[events]] - Event dispatcher service provider

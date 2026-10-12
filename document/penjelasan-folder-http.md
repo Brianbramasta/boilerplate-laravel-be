@@ -312,6 +312,10 @@ Ini membuat frontend mudah menerima dan memproses semua response secara konsiste
 ---
 
 ## Navigasi Cepat ⟶
-- [[repositories]] - Cara Repository mengambil data dari database
-- [[services]] - Logika bisnis di Service
-- [[providers]] - Cara semua komponen "sambung" satu sama lain
+**Layer Architecture:**
+- [[services]] - Business logic (Auth, Dashboard, CRUD)
+- [[repositories]] - Data access layer
+- [[providers]] - Dependency injection config
+- [[models]] - Eloquent models
+- [[interface]] - Contract interfaces
+- [[exceptions]] - Error handling

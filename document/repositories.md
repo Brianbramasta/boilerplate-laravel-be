@@ -208,4 +208,7 @@ interface AuthInterface
 ## Navigasi Cepat ⟶
 - [[services]] - Cara Service memakai Repository
 - [[providers]] - Cara Repository diregister di container
-- [[penjelasan-folder-http]] - Ringkasan semua komponen HTTP layer
+- [[interface]] - Kontrak yang di-implementasikan Repository
+- [[models]] - Model yang di-query Repository
+- [[exceptions]] - Exception yang lempar Repository
+- [[helper]] - Helper utility yang dipakai Repository

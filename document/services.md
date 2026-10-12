@@ -265,4 +265,8 @@ LengthAwarePaginator object
 ## Navigasi Cepat ⟶
 - [[repositories]] - Data yang di-query oleh Service
 - [[providers]] - Cara Service & Repository "sambung" satu sama lain
-- [[penjelasan-folder-http]] - Flow lengkap dari Controller ke Service ke Repository
+- [[http]] - Controller yang memanggil Service
+- [[models]] - Model yang diproses oleh Service
+- [[interface]] - Interface yang dipakai Service
+- [[exceptions]] - Exception yang dilempar Service
+- [[helper]] - Helper yang dipakai Service untuk transformasi data

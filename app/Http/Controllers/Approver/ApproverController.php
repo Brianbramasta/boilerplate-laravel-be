@@ -5,14 +5,19 @@ namespace App\Http\Controllers\Approver;
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Approver\ApproveLeaveRequest;
 use App\Http\Requests\Approver\RejectLeaveRequest;
-use App\Models\Employee\ApprovalHistory;
-use App\Models\Employee\LeaveBalance;
-use App\Models\Employee\LeaveRequest;
+use App\Http\Resources\Approver\LeaveRequestResource as ApproverLeaveRequestResource;
+use App\Services\Employee\ApproverService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class ApproverController extends BaseController
 {
+    protected $approverService;
+
+    public function __construct(ApproverService $approverService)
+    {
+        $this->approverService = $approverService;
+    }
+
     protected function ensureApprover()
     {
         $user = auth()->user();
@@ -27,34 +32,21 @@ class ApproverController extends BaseController
         $guard = $this->ensureApprover();
         if ($guard) return $guard;
 
-        $user = auth()->user();
-
-        $query = LeaveRequest::with(['leaveType', 'user.manager', 'user'])
-            ->whereHas('user.manager', fn($q) => $q->where('id', $user->id));
-
-        if ($request->has('status')) {
-            $query->where('status', $request->get('status'));
-        }
-
+        $status = $request->get('status');
         $page = $request->get('page', 1);
         $perPage = $request->get('per_page', 10);
 
-        $requests = $query->orderBy('created_at', 'desc')->paginate($perPage, ['*'], 'page', $page);
+        $requests = $this->approverService->getLeaveRequestsByManager(
+            auth()->user(),
+            $status,
+            $page,
+            $perPage
+        );
 
         return $this->successResponse(
             data: [
                 'current_page' => $requests->currentPage(),
-                'data' => collect($requests->items())->map(fn($r) => [
-                    'id' => $r->id,
-                    'employee_name' => $r->user->name,
-                    'leave_type_name' => $r->leaveType->name,
-                    'start_date' => $r->start_date->format('Y-m-d'),
-                    'end_date' => $r->end_date->format('Y-m-d'),
-                    'total_days' => $r->total_days,
-                    'reason' => $r->reason,
-                    'status' => $r->status,
-                    'created_at' => $r->created_at->toIso8601String(),
-                ]),
+                'data' => ApproverLeaveRequestResource::collection($requests->items()),
                 'per_page' => $requests->perPage(),
                 'to' => $requests->lastItem(),
                 'total' => $requests->total(),
@@ -68,55 +60,23 @@ class ApproverController extends BaseController
         $guard = $this->ensureApprover();
         if ($guard) return $guard;
 
-        $leaveRequest = LeaveRequest::where('id', $id)
-            ->whereHas('user.manager', fn($q) => $q->where('id', auth()->id()))
-            ->first();
+        $result = $this->approverService->approve(
+            $id,
+            auth()->id(),
+            $request->get('notes')
+        );
 
-        if (!$leaveRequest) {
-            return $this->errorResponse('Data pengajuan cuti tidak ditemukan atau Anda tidak memiliki akses.', 404);
+        if (!$result) {
+            return $this->errorResponse('Pengajuan tidak ditemukan, tidak dapat disetujui, atau saldo cuti tidak mencukupi.', 404);
         }
 
-        if (in_array($leaveRequest->status, ['APPROVED', 'REJECTED', 'CANCELLED'])) {
-            return $this->errorResponse("Pengajuan tidak dapat disetujui karena status saat ini sudah {$leaveRequest->status}.", 400);
-        }
-
-        $year = $leaveRequest->start_date->year;
-        $balance = LeaveBalance::where('user_id', $leaveRequest->user_id)
-            ->where('leave_type_id', $leaveRequest->leave_type_id)
-            ->where('year', $year)
-            ->first();
-
-        if (!$balance || $balance->remaining_balance < $leaveRequest->total_days) {
-            return $this->errorResponse('Gagal menyetujui. Saldo cuti karyawan tidak mencukupi.', 400);
-        }
-
-        try {
-            DB::transaction(function () use ($leaveRequest, $balance, $request) {
-                $leaveRequest->update(['status' => 'APPROVED']);
-
-                $balance->decrement('used_quota', $leaveRequest->total_days);
-                $balance->decrement('remaining_balance', $leaveRequest->total_days);
-
-                ApprovalHistory::create([
-                    'leave_request_id' => $leaveRequest->id,
-                    'actor_id' => auth()->id(),
-                    'actor_name' => auth()->user()->name,
-                    'previous_status' => $leaveRequest->status,
-                    'next_status' => 'APPROVED',
-                    'notes' => $request->get('notes'),
-                ]);
-            });
-
-            return $this->successResponse(
-                data: [
-                    'id' => $leaveRequest->id,
-                    'status' => 'APPROVED',
-                ],
-                message: 'Pengajuan cuti berhasil disetujui'
-            );
-        } catch (\Throwable $e) {
-            return $this->errorResponse('Gagal menyetujui pengajuan cuti.', 500);
-        }
+        return $this->successResponse(
+            data: [
+                'id' => $result->id,
+                'status' => 'APPROVED',
+            ],
+            message: 'Pengajuan cuti berhasil disetujui'
+        );
     }
 
     public function reject(RejectLeaveRequest $request, $id)
@@ -124,32 +84,19 @@ class ApproverController extends BaseController
         $guard = $this->ensureApprover();
         if ($guard) return $guard;
 
-        $leaveRequest = LeaveRequest::where('id', $id)
-            ->whereHas('user.manager', fn($q) => $q->where('id', auth()->id()))
-            ->first();
+        $result = $this->approverService->reject(
+            $id,
+            auth()->id(),
+            $request->get('notes')
+        );
 
-        if (!$leaveRequest) {
-            return $this->errorResponse('Data pengajuan cuti tidak ditemukan atau Anda tidak memiliki akses.', 404);
+        if (!$result) {
+            return $this->errorResponse('Pengajuan tidak ditemukan atau tidak dapat ditolak.', 404);
         }
-
-        if (in_array($leaveRequest->status, ['APPROVED', 'REJECTED', 'CANCELLED'])) {
-            return $this->errorResponse("Pengajuan tidak dapat ditolak karena status saat ini sudah {$leaveRequest->status}.", 400);
-        }
-
-        $leaveRequest->update(['status' => 'REJECTED']);
-
-        ApprovalHistory::create([
-            'leave_request_id' => $leaveRequest->id,
-            'actor_id' => auth()->id(),
-            'actor_name' => auth()->user()->name,
-            'previous_status' => $leaveRequest->status,
-            'next_status' => 'REJECTED',
-            'notes' => $request->get('notes'),
-        ]);
 
         return $this->successResponse(
             data: [
-                'id' => $leaveRequest->id,
+                'id' => $result->id,
                 'status' => 'REJECTED',
             ],
             message: 'Pengajuan cuti berhasil ditolak'

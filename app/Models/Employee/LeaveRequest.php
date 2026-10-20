@@ -12,9 +12,11 @@ class LeaveRequest extends Model
 
     protected $casts = [
         'total_days' => 'integer',
+        'start_date' => 'datetime',
+        'end_date' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
-
-    protected $dates = ['start_date', 'end_date', 'created_at', 'updated_at'];
 
     protected $hidden = ['created_at', 'updated_at'];
 

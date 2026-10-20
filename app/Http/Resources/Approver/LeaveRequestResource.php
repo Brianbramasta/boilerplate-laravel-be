@@ -13,12 +13,12 @@ class LeaveRequestResource extends JsonResource
             'id' => $this->id,
             'employee_name' => $this->user->name,
             'leave_type_name' => $this->leaveType->name,
-            'start_date' => $this->start_date->format('Y-m-d'),
-            'end_date' => $this->end_date->format('Y-m-d'),
+            'start_date' => $this->start_date?->format('Y-m-d'),
+            'end_date' => $this->end_date?->format('Y-m-d'),
             'total_days' => $this->total_days,
             'reason' => $this->reason,
             'status' => $this->status,
-            'created_at' => $this->created_at->toIso8601String(),
+            'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
 }

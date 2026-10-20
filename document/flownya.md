@@ -74,3 +74,6 @@ public function findById(string $id)
 
 Jadi: Database → Repository → Service → Controller → Resource → Frontend
 ```
+
+
+Fe -> api -> controller -> validation (request) -> service -> interface -> repo ->service -> controller -> resource-> traits (opsional)->return data yang sudah di mappaing

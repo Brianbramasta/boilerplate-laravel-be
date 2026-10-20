@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "fixing/20 oktober 2026/fixing_20261020_1435_update_penyesuiaian_repository_pattern.md",
+                "file": "arsitecture-system/providers.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "fixing_20261020_1435_update_penyesuiaian_repository_pattern"
+              "title": "providers"
             }
           }
         ]
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "fixing/20 oktober 2026/fixing_20261020_1435_update_penyesuiaian_repository_pattern.md",
+                "file": "arsitecture-system/providers.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -118,7 +118,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "fixing/20 oktober 2026/fixing_20261020_1435_update_penyesuiaian_repository_pattern.md",
+                "file": "arsitecture-system/providers.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
@@ -161,7 +161,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "fixing/20 oktober 2026/fixing_20261020_1435_update_penyesuiaian_repository_pattern.md",
+                "file": "arsitecture-system/providers.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -189,5 +189,7 @@
     }
   },
   "active": "9686559be5c39ba2",
-  "lastOpenFiles": []
+  "lastOpenFiles": [
+    "fixing/20 oktober 2026/fixing_20261020_1435_update_penyesuiaian_repository_pattern.md"
+  ]
 }

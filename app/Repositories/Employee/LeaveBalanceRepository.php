@@ -15,6 +15,13 @@ class LeaveBalanceRepository implements LeaveBalanceInterface
             ->first();
     }
 
+    public function findAllByUser($userId, $perPage = 10, $page = 1)
+    {
+        return LeaveBalance::where('user_id', $userId)
+            ->with('leaveType')
+            ->paginate($perPage, ['*'], 'page', $page);
+    }
+
     public function hasSufficientBalance($balance, $totalDays)
     {
         return $balance && $balance->remaining_balance >= $totalDays;

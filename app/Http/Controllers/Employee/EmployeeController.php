@@ -4,30 +4,31 @@ namespace App\Http\Controllers\Employee;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Employee\CreateLeaveRequest;
-use App\Http\Resources\Employee\LeaveTypeResource;
 use App\Http\Resources\Employee\LeaveBalanceResource;
 use App\Http\Resources\Employee\LeaveRequestResource;
-use App\Models\Employee\LeaveBalance;
+use App\Http\Resources\Employee\LeaveTypeResource;
 use App\Models\Employee\LeaveRequest;
-use App\Models\Employee\LeaveType;
 use App\Services\Employee\EmployeeService;
+use App\Services\Employee\LeaveTypeService;
 use Illuminate\Http\Request;
 
 class EmployeeController extends BaseController
 {
-    public function __construct(protected EmployeeService $employeeService)
+    protected $employeeService;
+    protected $leaveTypeService;
+
+    public function __construct(EmployeeService $employeeService, LeaveTypeService $leaveTypeService)
     {
-        //
+        $this->employeeService = $employeeService;
+        $this->leaveTypeService = $leaveTypeService;
     }
 
     public function leaveTypes(Request $request)
     {
-        $query = LeaveType::query();
-
         $page = $request->get('page', 1);
         $perPage = $request->get('per_page', 10);
 
-        $leaveTypes = $query->paginate($perPage, ['*'], 'page', $page);
+        $leaveTypes = $this->leaveTypeService->getPaginated($perPage, $page);
 
         return $this->successResponse(
             data: [
@@ -46,12 +47,10 @@ class EmployeeController extends BaseController
     {
         $user = auth()->user();
 
-        $query = LeaveBalance::where('user_id', $user->id);
-
         $page = $request->get('page', 1);
         $perPage = $request->get('per_page', 10);
 
-        $balances = $query->paginate($perPage, ['*'], 'page', $page);
+        $balances = $this->employeeService->getLeaveBalances($user->id, $perPage, $page);
 
         return $this->successResponse(
             data: [
@@ -70,12 +69,11 @@ class EmployeeController extends BaseController
     {
         $user = auth()->user();
 
-        $query = LeaveRequest::where('user_id', $user->id);
-
+        $status = $request->get('status');
         $page = $request->get('page', 1);
         $perPage = $request->get('per_page', 10);
 
-        $requests = $query->orderBy('created_at', 'desc')->paginate($perPage, ['*'], 'page', $page);
+        $requests = $this->employeeService->getLeaveRequestsByUser($user->id, $status, $page, $perPage);
 
         return $this->successResponse(
             data: [
@@ -98,15 +96,7 @@ class EmployeeController extends BaseController
         );
 
         return $this->successResponse(
-            data: [
-                'id' => $leaveRequest->id,
-                'leave_type_id' => $leaveRequest->leave_type_id,
-                'start_date' => $leaveRequest->start_date,
-                'end_date' => $leaveRequest->end_date,
-                'total_days' => $leaveRequest->total_days,
-                'reason' => $leaveRequest->reason,
-                'status' => $leaveRequest->status,
-            ],
+            data: new LeaveRequestResource($leaveRequest),
             message: 'Pengajuan cuti berhasil disubmit',
             code: 201
         );
@@ -116,30 +106,20 @@ class EmployeeController extends BaseController
     {
         $user = auth()->user();
 
-        $leaveRequest = LeaveRequest::where('user_id', $user->id)
-            ->where('id', $id)
-            ->first();
+        $result = $this->employeeService->cancelLeaveRequest($id, $user->id);
 
-        if (!$leaveRequest) {
+        if ($result === null) {
             return $this->errorResponse('Data pengajuan cuti tidak ditemukan.', 404);
         }
 
-        if (!$leaveRequest->isCancellable()) {
-            $status = match($leaveRequest->status) {
-                'APPROVED' => 'APPROVED',
-                'REJECTED' => 'REJECTED',
-                'CANCELLED' => 'CANCELLED',
-                default => 'STATUS'
-            };
-            return $this->errorResponse("Pengajuan tidak dapat dibatalkan karena status saat ini adalah {$status}.", 400);
+        if ($result === false) {
+            return $this->errorResponse('Pengajuan tidak dapat dibatalkan karena sudah disetujui atau ditolak.', 400);
         }
-
-        $leaveRequest->update(['status' => LeaveRequest::STATUS_CANCELLED]);
 
         return $this->successResponse(
             data: [
-                'id' => $leaveRequest->id,
-                'status' => $leaveRequest->status,
+                'id' => $result->id,
+                'status' => $result->status,
             ],
             message: 'Pengajuan cuti berhasil dibatalkan',
             code: 200

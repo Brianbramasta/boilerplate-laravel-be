@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "arsitecture-system/providers.md",
+                "file": "fixing/20 oktober 2026/fixing_20261020_1510_update_penyesuiaian_repository_pattern_karyawan.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "providers"
+              "title": "fixing_20261020_1510_update_penyesuiaian_repository_pattern_karyawan"
             }
           }
         ]
@@ -83,7 +83,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 222.71250915527344
   },
   "right": {
     "id": "05e6eba165d3d406",
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "arsitecture-system/providers.md",
+                "file": "fixing/20 oktober 2026/fixing_20261020_1510_update_penyesuiaian_repository_pattern_karyawan.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -118,7 +118,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "arsitecture-system/providers.md",
+                "file": "fixing/20 oktober 2026/fixing_20261020_1510_update_penyesuiaian_repository_pattern_karyawan.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
@@ -161,7 +161,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "arsitecture-system/providers.md",
+                "file": "fixing/20 oktober 2026/fixing_20261020_1510_update_penyesuiaian_repository_pattern_karyawan.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -190,6 +190,8 @@
   },
   "active": "9686559be5c39ba2",
   "lastOpenFiles": [
-    "fixing/20 oktober 2026/fixing_20261020_1435_update_penyesuiaian_repository_pattern.md"
+    "fixing/20 oktober 2026/fixing_20261020_1435_update_penyesuiaian_repository_pattern.md",
+    "fixing/20 oktober 2026/fixing_20261020_1510_update_penyesuiaian_repository_pattern_karyawan.md",
+    "arsitecture-system/providers.md"
   ]
 }

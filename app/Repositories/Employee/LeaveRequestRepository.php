@@ -4,13 +4,25 @@ namespace App\Repositories\Employee;
 
 use App\Contracts\Employee\LeaveRequestInterface;
 use App\Models\Employee\LeaveRequest;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class LeaveRequestRepository implements LeaveRequestInterface
 {
     public function findWithRelations($id)
     {
         return LeaveRequest::with(['leaveType', 'user.manager', 'user'])->find($id);
+    }
+
+    public function findByUserWithStatus($userId, $status = null, $perPage = 10, $page = 1)
+    {
+        $query = LeaveRequest::with(['leaveType', 'user.manager', 'user'])
+            ->where('user_id', $userId)
+            ->orderBy('created_at', 'desc');
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
     public function findByManagerWithStatus($managerId, $status = null, $perPage = 10, $page = 1)

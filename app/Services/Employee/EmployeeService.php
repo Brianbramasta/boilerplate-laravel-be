@@ -2,7 +2,8 @@
 
 namespace App\Services\Employee;
 
-use App\Models\Employee\LeaveBalance;
+use App\Contracts\Employee\LeaveBalanceInterface;
+use App\Contracts\Employee\LeaveRequestInterface;
 use App\Models\Employee\LeaveRequest;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -10,16 +11,28 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class EmployeeService
 {
+    protected $leaveRequestRepo;
+    protected $leaveBalanceRepo;
+
+    public function __construct(
+        LeaveRequestInterface $leaveRequestRepo,
+        LeaveBalanceInterface $leaveBalanceRepo
+    ) {
+        $this->leaveRequestRepo = $leaveRequestRepo;
+        $this->leaveBalanceRepo = $leaveBalanceRepo;
+    }
+
     public function createLeaveRequest(array $data, int $userId): LeaveRequest
     {
         $startDate = Carbon::parse($data['start_date']);
         $endDate = Carbon::parse($data['end_date']);
         $totalDays = $startDate->diffInDays($endDate) + 1;
 
-        $balance = LeaveBalance::where('user_id', $userId)
-            ->where('leave_type_id', $data['leave_type_id'])
-            ->where('year', $startDate->year)
-            ->first();
+        $balance = $this->leaveBalanceRepo->findByUserAndTypeAndYear(
+            $userId,
+            $data['leave_type_id'],
+            $startDate->year
+        );
 
         if (!$balance) {
             throw new HttpException(400, 'Saldo cuti tidak ditemukan.');
@@ -44,6 +57,35 @@ class EmployeeService
                 'status' => LeaveRequest::STATUS_SUBMITTED,
             ]);
         });
+    }
+
+    public function getLeaveRequestsByUser($userId, $status = null, $perPage = 10, $page = 1)
+    {
+        return $this->leaveRequestRepo->findByUserWithStatus($userId, $status, $perPage, $page);
+    }
+
+    public function cancelLeaveRequest($id, $userId)
+    {
+        $leaveRequest = LeaveRequest::where('user_id', $userId)->where('id', $id)->first();
+
+        if (!$leaveRequest) {
+            return null;
+        }
+
+        if (!$leaveRequest->isCancellable()) {
+            return false;
+        }
+
+        DB::transaction(function () use ($leaveRequest) {
+            $leaveRequest->update(['status' => LeaveRequest::STATUS_CANCELLED]);
+        });
+
+        return $leaveRequest;
+    }
+
+    public function getLeaveBalances($userId, $perPage = 10, $page = 1)
+    {
+        return $this->leaveBalanceRepo->findAllByUser($userId, $perPage, $page);
     }
 
     private function hasOverlap(int $userId, int $leaveTypeId, Carbon $startDate, Carbon $endDate): bool

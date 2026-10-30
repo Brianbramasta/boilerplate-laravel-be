@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "fixing/20 oktober 2026/fixing_20261020_1510_update_penyesuiaian_repository_pattern_karyawan.md",
+                "file": "arsitecture-system/providers.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "fixing_20261020_1510_update_penyesuiaian_repository_pattern_karyawan"
+              "title": "providers"
             }
           }
         ]
@@ -190,8 +190,22 @@
   },
   "active": "9686559be5c39ba2",
   "lastOpenFiles": [
-    "fixing/20 oktober 2026/fixing_20261020_1435_update_penyesuiaian_repository_pattern.md",
+    "arsitecture-system/Rules/rules.md",
+    "arsitecture-system/Rules/mermaid.md",
+    "arsitecture-system/events.md",
+    "arsitecture-system/traits.md",
+    "arsitecture-system/Rules",
+    "arsitecture-system/support.md",
+    "arsitecture-system/services.md",
+    "arsitecture-system/repositories.md",
+    "arsitecture-system/providers.md",
+    "arsitecture-system/penjelasan-folder-http.md",
+    "arsitecture-system/model.md",
+    "arsitecture-system/interface.md",
+    "arsitecture-system/helper.md",
+    "arsitecture-system/flownya.md",
+    "arsitecture-system/exceptions.md",
     "fixing/20 oktober 2026/fixing_20261020_1510_update_penyesuiaian_repository_pattern_karyawan.md",
-    "arsitecture-system/providers.md"
+    "fixing/20 oktober 2026/fixing_20261020_1435_update_penyesuiaian_repository_pattern.md"
   ]
 }
